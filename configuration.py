@@ -9,7 +9,25 @@ TEMP_DIR = BASE_DIR / "temp"
 # Files
 FILE_STOCK_DATA = "stock_data.json"
 FILE_STOCK_LIST = "list_of_stocks.csv"
+FILE_REQUEST_TIME = "request_time.txt"
 
+WANTED_COLUMNS = [
+    "symbol",
+    "my_name",
+    "shortName",
+    "currentPrice",
+    "targetMeanPrice",
+    "recommendationKey",
+    "averageAnalystRating",
+    "dividendYield",
+    "epsTrailingTwelveMonths",
+]
+
+COLUMNS_NEED_EUR_CONVERTION = [
+    "currentPrice",
+    "targetMeanPrice",
+    "epsTrailingTwelveMonths",
+]
 
 if __name__ == "__main__":
     print("PATHS")
