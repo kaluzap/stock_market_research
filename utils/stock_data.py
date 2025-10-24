@@ -34,15 +34,4 @@ def load_stock_data(data_file_path: Path) -> pd.DataFrame:
     return df
 
 
-if __name__ == "__main__":
 
-    data_file_path = Path("testing.json")
-
-    actualize_stock_data(
-        ["NVDA", "HFG.DE", "MSFT", "AAPL", "GOOG", "uuuuu", "INTC"],
-        data_file_path,
-    )
-
-    df = load_stock_data(data_file_path)
-
-    print(df.head())
