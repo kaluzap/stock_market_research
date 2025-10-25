@@ -58,8 +58,8 @@ def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price
     )
     report_file.write(text + "\n")
 
-    table = df.to_html(escape=False)
-    report_file.write(table)
+    table = df.to_html(escape=False, justify="center")
+    report_file.write(table.replace("<td>", '<td align="center">'))
 
     report_file.close()
 
@@ -83,7 +83,7 @@ def create_stocks_df(data_path_dir: Path, sort_by: str) -> tuple[pd.DataFrame, f
     eur_usd_price = round(df[df["symbol"] == "EURUSD=X"].iloc[0]["ask"], 5)
     print(f"EUR price : {eur_usd_price} USD")
     for col in cfg.COLUMNS_NEED_EUR_CONVERTION:
-        df[col] = df[col].map(lambda x: x / eur_usd_price)
+        df[col] = df[col].map(lambda x: round(x / eur_usd_price,2))
 
     # Remove columns
     df = df[~df["symbol"].isin(["EURUSD=X"])][cfg.WANTED_COLUMNS].copy()
