@@ -14,6 +14,7 @@ FILE_REQUEST_TIME = "request_time.txt"
 WANTED_COLUMNS = [
     "symbol",
     "my_name",
+    "isin",
     "shortName",
     "currentPrice",
     "targetMeanPrice",

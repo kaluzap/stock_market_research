@@ -69,11 +69,13 @@ def create_stocks_df(data_path_dir: Path, sort_by: str) -> tuple[pd.DataFrame, f
     # Load data
     df = stock_data.load_stock_data(data_file_path)
 
-    # Add my names as column
+    # Add my names and isin as columns
     file_with_stocks_list = data_path_dir / cfg.FILE_STOCK_LIST
     df_symbol_name = pd.read_csv(file_with_stocks_list)
     symbol_name = dict(zip(df_symbol_name['symbol'], df_symbol_name['name']))
+    symbol_isin = dict(zip(df_symbol_name['symbol'], df_symbol_name['isin']))
     df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x,""))
+    df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x,""))
 
     # Sorting DF
     df = df.sort_values(by=[sort_by])
