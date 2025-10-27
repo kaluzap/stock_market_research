@@ -24,11 +24,14 @@ WANTED_COLUMNS = [
     "epsTrailingTwelveMonths",
 ]
 
-COLUMNS_NEED_EUR_CONVERTION = [
+COLUMNS_NEED_CURRENCY_CONVERTION = [
     "currentPrice",
     "targetMeanPrice",
     "epsTrailingTwelveMonths",
 ]
+
+CURRENCIES = ["EURUSD=X", "EURHKD=X", "EURGBP=X", "EURCHF=X"]
+
 
 if __name__ == "__main__":
     print("PATHS")

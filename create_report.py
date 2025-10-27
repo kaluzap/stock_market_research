@@ -32,7 +32,7 @@ def actualize_stock_data(data_path_dir: Path):
     df = pd.read_csv(file_with_stocks_list)
 
     # Add always EUR to transform USD to EUR.
-    list_of_stocks = list(set(df["symbol"])) + ["EURUSD=X"]
+    list_of_stocks = list(set(df["symbol"])) + cfg.CURRENCIES
     print(f"Downloading data for: {list_of_stocks}")
 
     save_request_time()
@@ -50,7 +50,10 @@ def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price
     text = '<p><font size="8" color="black">STOCKS SIMPLE REPORT</font></p>'
     report_file.write(text + "\n")
 
-    text = f'<p><font size="2" color="red">1 EUR = {eur_usd_price} USD</font></p>'
+    text = ""
+    for currency, amount in eur_usd_price.items():
+        text +=f"1 EUR = {amount} {currency}<br>"
+    text = f'<p><font size="2" color="red">{text}</font></p>'
     report_file.write(text + "\n")
 
     text = (
@@ -74,23 +77,38 @@ def create_stocks_df(data_path_dir: Path, sort_by: str) -> tuple[pd.DataFrame, f
     df_symbol_name = pd.read_csv(file_with_stocks_list)
     symbol_name = dict(zip(df_symbol_name['symbol'], df_symbol_name['name']))
     symbol_isin = dict(zip(df_symbol_name['symbol'], df_symbol_name['isin']))
-    df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x,""))
-    df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x,""))
+    df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x,"NO DATA"))
+    df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x,"NO DATA"))
 
     # Sorting DF
     df = df.sort_values(by=[sort_by])
     df = df.reset_index(drop=True)
+    df["currency"] = df["currency"].map(lambda x : x.upper())
 
     # Transform USD to EUR
-    eur_usd_price = round(df[df["symbol"] == "EURUSD=X"].iloc[0]["ask"], 5)
-    print(f"EUR price : {eur_usd_price} USD")
-    for col in cfg.COLUMNS_NEED_EUR_CONVERTION:
-        df[col] = df[col].map(lambda x: round(x / eur_usd_price,2))
+    print(df["currency"].value_counts())
+    eur_currencies_prices = dict()
+    for currency_symbol in cfg.CURRENCIES:
+        row = df[df["symbol"] == currency_symbol].iloc[0]
+        eur_currencies_prices[row["currency"]] = float(row["ask"])
+    print(eur_currencies_prices)
+
+    def _make_currency_transformation(row: pd.Series, col):
+        if row["currency"] == "EUR":
+            return row[col]
+        elif row["currency"] in eur_currencies_prices:
+            return row[col] / eur_currencies_prices[row["currency"]]
+        else:
+            # Only to note the missing currency in the reoport
+            return -row[col]
+
+    for col in cfg.COLUMNS_NEED_CURRENCY_CONVERTION:
+        df[col] = df.apply(lambda r: round(_make_currency_transformation(r,col),2),axis=1)
 
     # Remove columns
-    df = df[~df["symbol"].isin(["EURUSD=X"])][cfg.WANTED_COLUMNS].copy()
+    df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
 
-    return df, eur_usd_price
+    return df, eur_currencies_prices
 
 
 def main(data_path_dir: Path, sort_by: str, actualize: bool):
@@ -98,10 +116,10 @@ def main(data_path_dir: Path, sort_by: str, actualize: bool):
     if actualize:
         actualize_stock_data(data_path_dir)
 
-    df, eur_usd_price = create_stocks_df(data_path_dir, sort_by)
+    df, eur_currencies_prices = create_stocks_df(data_path_dir, sort_by)
 
     report_file_path = cfg.REPORT_DIR / "simple_stock_report.html"
-    create_simple_report(df, report_file_path, eur_usd_price)
+    create_simple_report(df, report_file_path, eur_currencies_prices)
 
 
 if __name__ == "__main__":
