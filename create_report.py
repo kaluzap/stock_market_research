@@ -42,7 +42,9 @@ def actualize_stock_data(data_path_dir: Path):
     )
 
 
-def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price: float):
+def create_simple_report(
+    df: pd.DataFrame, report_file_path: Path, eur_usd_price: float
+):
 
     report_file = open(report_file_path, "w")
 
@@ -52,7 +54,7 @@ def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price
 
     text = ""
     for currency, amount in eur_usd_price.items():
-        text +=f"1 EUR = {amount} {currency}<br>"
+        text += f"1 EUR = {amount} {currency}<br>"
     text = f'<p><font size="2" color="red">{text}</font></p>'
     report_file.write(text + "\n")
 
@@ -67,7 +69,9 @@ def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price
     report_file.close()
 
 
-def create_stocks_df(data_path_dir: Path, sort_by: str) -> tuple[pd.DataFrame, float]:
+def create_stocks_df(
+    data_path_dir: Path, sort_by: str, value: str
+) -> tuple[pd.DataFrame, float]:
 
     # Load data
     df = stock_data.load_stock_data(data_file_path)
@@ -75,21 +79,24 @@ def create_stocks_df(data_path_dir: Path, sort_by: str) -> tuple[pd.DataFrame, f
     # Add my names and isin as columns
     file_with_stocks_list = data_path_dir / cfg.FILE_STOCK_LIST
     df_symbol_name = pd.read_csv(file_with_stocks_list)
-    symbol_name = dict(zip(df_symbol_name['symbol'], df_symbol_name['name']))
-    symbol_isin = dict(zip(df_symbol_name['symbol'], df_symbol_name['isin']))
-    df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x,"NO DATA"))
-    df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x,"NO DATA"))
+    symbol_name = dict(zip(df_symbol_name["symbol"], df_symbol_name["name"]))
+    symbol_isin = dict(zip(df_symbol_name["symbol"], df_symbol_name["isin"]))
+    df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x, "NO DATA"))
+    df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x, "NO DATA"))
 
     # Sorting DF
     df = df.sort_values(by=[sort_by])
-    df = df.reset_index(drop=True)
-    df["currency"] = df["currency"].map(lambda x : x.upper())
 
-    # Transform USD to EUR
+
+    # Transform currencies to EUR
+    df["currency"] = df["currency"].map(lambda x: x.upper())
     print(df["currency"].value_counts())
     eur_currencies_prices = dict()
     for currency_symbol in cfg.CURRENCIES:
-        row = df[df["symbol"] == currency_symbol].iloc[0]
+        try:
+            row = df[df["symbol"] == currency_symbol].iloc[0]
+        except IndexError:
+            continue
         eur_currencies_prices[row["currency"]] = float(row["ask"])
     print(eur_currencies_prices)
 
@@ -103,20 +110,28 @@ def create_stocks_df(data_path_dir: Path, sort_by: str) -> tuple[pd.DataFrame, f
             return -row[col]
 
     for col in cfg.COLUMNS_NEED_CURRENCY_CONVERTION:
-        df[col] = df.apply(lambda r: round(_make_currency_transformation(r,col),2),axis=1)
+        df[col] = df.apply(
+            lambda r: round(_make_currency_transformation(r, col), 2), axis=1
+        )
 
     # Remove columns
     df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
 
+    # Filtering if value
+    if value:
+        df = df[df[sort_by] == value].copy()
+
+    df = df.reset_index(drop=True)
+
     return df, eur_currencies_prices
 
 
-def main(data_path_dir: Path, sort_by: str, actualize: bool):
+def main(data_path_dir: Path, sort_by: str, value: str, actualize: bool):
 
     if actualize:
         actualize_stock_data(data_path_dir)
 
-    df, eur_currencies_prices = create_stocks_df(data_path_dir, sort_by)
+    df, eur_currencies_prices = create_stocks_df(data_path_dir, sort_by, value)
 
     report_file_path = cfg.REPORT_DIR / "simple_stock_report.html"
     create_simple_report(df, report_file_path, eur_currencies_prices)
@@ -144,7 +159,16 @@ if __name__ == "__main__":
         required=False,
         type=str,
         default="my_name",
-        help="Specify column for sorting.",
+        help="Specify column for sorting (default = my_name).",
+    )
+
+    parser.add_argument(
+        "--value",
+        "-v",
+        required=False,
+        type=str,
+        default="",
+        help="Specify a value of the column sort_by.",
     )
 
     parser.add_argument(
@@ -157,4 +181,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.data_path_dir, args.sort_by, args.actualize)
+    main(args.data_path_dir, args.sort_by, args.value, args.actualize)
