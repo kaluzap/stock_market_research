@@ -70,7 +70,7 @@ def create_simple_report(
 
 
 def create_stocks_df(
-    data_path_dir: Path, sort_by: str, value: str
+    data_path_dir: Path, sort_by: str, column_value: str
 ) -> tuple[pd.DataFrame, float]:
 
     # Load data
@@ -84,8 +84,14 @@ def create_stocks_df(
     df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x, "NO DATA"))
     df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x, "NO DATA"))
 
+    # Add possible percentage change
+    df["change"] = df.apply(lambda row: round(100*(row["targetMeanPrice"] - row["currentPrice"])/row["currentPrice"],2), axis=1)
+
     # Sorting DF
-    df = df.sort_values(by=[sort_by])
+    try:
+        df = df.sort_values(by=[sort_by])
+    except KeyError:
+        print(f"ERROR: unknown column '{sort_by}'.")
 
 
     # Transform currencies to EUR
@@ -117,21 +123,33 @@ def create_stocks_df(
     # Remove columns
     df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
 
-    # Filtering if value
-    if value:
-        df = df[df[sort_by] == value].copy()
-
+    # Filtering if column and value
+    try:
+        col = column_value.split("+")[0]
+        value = column_value.split("+")[1]
+    except IndexError:
+        col, value = "", ""
+    if col and value:
+        try:
+            df = df[df[col] == value].copy()
+        except KeyError:
+            print(f"ERROR: unknown column '{col}'.")
     df = df.reset_index(drop=True)
+
+
+
+
+
 
     return df, eur_currencies_prices
 
 
-def main(data_path_dir: Path, sort_by: str, value: str, actualize: bool):
+def main(data_path_dir: Path, sort_by: str, column_value: str, actualize: bool):
 
     if actualize:
         actualize_stock_data(data_path_dir)
 
-    df, eur_currencies_prices = create_stocks_df(data_path_dir, sort_by, value)
+    df, eur_currencies_prices = create_stocks_df(data_path_dir, sort_by, column_value)
 
     report_file_path = cfg.REPORT_DIR / "simple_stock_report.html"
     create_simple_report(df, report_file_path, eur_currencies_prices)
@@ -163,12 +181,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--value",
-        "-v",
+        "--column_value",
+        "-cv",
         required=False,
         type=str,
         default="",
-        help="Specify a value of the column sort_by.",
+        help="Specify a column and value for filtering. Use + as separator (recommendationKey+hold).",
     )
 
     parser.add_argument(
@@ -181,4 +199,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.data_path_dir, args.sort_by, args.value, args.actualize)
+    main(
+        args.data_path_dir,
+        args.sort_by,
+        args.column_value,
+        args.actualize
+    )

@@ -22,6 +22,7 @@ WANTED_COLUMNS = [
     "averageAnalystRating",
     "dividendYield",
     "epsTrailingTwelveMonths",
+    "change",
 ]
 
 COLUMNS_NEED_CURRENCY_CONVERTION = [
