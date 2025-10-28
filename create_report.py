@@ -124,6 +124,7 @@ def create_stocks_df(
     df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
 
     # Filtering if column and value
+    df = df.astype(str)
     try:
         col = column_value.split("+")[0]
         value = column_value.split("+")[1]
