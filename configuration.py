@@ -16,7 +16,7 @@ WANTED_COLUMNS = [
     "my_name",
     "isin",
     "shortName",
-    "currentPrice",
+    "regularMarketPrice",
     "targetMeanPrice",
     "recommendationKey",
     "averageAnalystRating",
@@ -26,7 +26,7 @@ WANTED_COLUMNS = [
 ]
 
 COLUMNS_NEED_CURRENCY_CONVERTION = [
-    "currentPrice",
+    "regularMarketPrice",
     "targetMeanPrice",
     "epsTrailingTwelveMonths",
 ]

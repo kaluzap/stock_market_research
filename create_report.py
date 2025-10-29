@@ -85,7 +85,7 @@ def create_stocks_df(
     df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x, "NO DATA"))
 
     # Add possible percentage change
-    df["change"] = df.apply(lambda row: round(100*(row["targetMeanPrice"] - row["currentPrice"])/row["currentPrice"],2), axis=1)
+    df["change"] = df.apply(lambda row: round(100*(row["targetMeanPrice"] - row["regularMarketPrice"])/row["regularMarketPrice"],2), axis=1)
 
     # Sorting DF
     try:
