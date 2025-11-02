@@ -140,14 +140,14 @@ def create_stocks_df(
     df = df.reset_index(drop=True)
 
     # yahoo link
-    df["yahoo_link"] = df.apply(lambda x: f'<a href= https://finance.yahoo.com/quote/{x["symbol"]}>[link]</a>', axis=1)
+    df["yahoo_link"] = df.apply(lambda x: f'<a href="https://finance.yahoo.com/quote/{x["symbol"]}" target="_blank">[link]</a>', axis=1)
 
     # google link
     def _make_google_link(row: pd.Series)-> str:
         try:
             if row["gsymbol"] == "nan":
                 return ""
-            text = f'<a href= https://www.google.com/finance/quote/{row["gsymbol"]}>[link]</a>'
+            text = f'<a href="https://www.google.com/finance/quote/{row["gsymbol"]}" target="_blank">[link]</a>'
             return text
         except KeyError as e:
             return ""
