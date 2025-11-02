@@ -1,3 +1,3 @@
-"symbol","name","isin"
-"NVDA","nvidia","US67066G1040"
-"AAPL","apple",""
+"symbol","name","isin","gsymbol"
+"NVDA","nvidia","US67066G1040",""
+"AAPL","apple","",""

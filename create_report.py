@@ -81,8 +81,10 @@ def create_stocks_df(
     df_symbol_name = pd.read_csv(file_with_stocks_list)
     symbol_name = dict(zip(df_symbol_name["symbol"], df_symbol_name["name"]))
     symbol_isin = dict(zip(df_symbol_name["symbol"], df_symbol_name["isin"]))
-    df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x, "NO DATA"))
-    df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x, "NO DATA"))
+    symbol_gsymbol = dict(zip(df_symbol_name["symbol"], df_symbol_name["gsymbol"]))
+    df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x, None))
+    df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x, None))
+    df["gsymbol"] = df["symbol"].map(lambda x: symbol_gsymbol.get(x, None))
 
     # Add possible percentage change
     df["change"] = df.apply(lambda row: round(100*(row["targetMeanPrice"] - row["regularMarketPrice"])/row["regularMarketPrice"],2), axis=1)
@@ -126,8 +128,8 @@ def create_stocks_df(
     # Filtering if column and value
     df = df.astype(str)
     try:
-        col = column_value.split("+")[0]
-        value = column_value.split("+")[1]
+        col = column_value.split(":")[0]
+        value = column_value.split(":")[1]
     except IndexError:
         col, value = "", ""
     if col and value:
@@ -137,10 +139,20 @@ def create_stocks_df(
             print(f"ERROR: unknown column '{col}'.")
     df = df.reset_index(drop=True)
 
+    # yahoo link
+    df["yahoo_link"] = df.apply(lambda x: f'<a href= https://finance.yahoo.com/quote/{x["symbol"]}>[link]</a>', axis=1)
 
+    # google link
+    def _make_google_link(row: pd.Series)-> str:
+        try:
+            if row["gsymbol"] == "nan":
+                return ""
+            text = f'<a href= https://www.google.com/finance/quote/{row["gsymbol"]}>[link]</a>'
+            return text
+        except KeyError as e:
+            return ""
 
-
-
+    df["google_link"] = df.apply(lambda row: _make_google_link(row), axis=1)
 
     return df, eur_currencies_prices
 

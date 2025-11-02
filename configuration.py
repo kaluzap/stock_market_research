@@ -15,14 +15,14 @@ WANTED_COLUMNS = [
     "symbol",
     "my_name",
     "isin",
+    "gsymbol",
     "shortName",
     "regularMarketPrice",
     "targetMeanPrice",
+    "change",
     "recommendationKey",
-    "averageAnalystRating",
     "dividendYield",
     "epsTrailingTwelveMonths",
-    "change",
 ]
 
 COLUMNS_NEED_CURRENCY_CONVERTION = [
