@@ -31,8 +31,15 @@ COLUMNS_NEED_CURRENCY_CONVERTION = [
     "epsTrailingTwelveMonths",
 ]
 
-CURRENCIES = ["EURUSD=X", "EURHKD=X", "EURGBP=X", "EURCHF=X"]
-
+CURRENCIES = [
+    "EURUSD=X",
+    "EURHKD=X",
+    "EURGBP=X",
+    "EURCHF=X",
+    "EURJPY=X",
+    "EURBRL=X",
+    "EURCHF=X",
+]
 
 if __name__ == "__main__":
     print("PATHS")
