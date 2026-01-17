@@ -9,6 +9,7 @@ from datetime import datetime
 
 
 data_file_path = cfg.TEMP_DIR / cfg.FILE_STOCK_DATA
+PATH_FILE_STOCKS_PRICES = Path("/tmp/stocks_prices.csv")
 
 
 def save_request_time() -> datetime:
@@ -165,7 +166,7 @@ def main(data_path_dir: Path, sort_by: str, column_value: str, actualize: bool):
     df, eur_currencies_prices = create_stocks_df(data_path_dir, sort_by, column_value)
 
     # send a copy for other uses
-    df[["my_name","isin","regularMarketPrice"]].to_csv("/tmp/stocks_prices.csv")
+    df[["my_name","isin","regularMarketPrice"]].to_csv(PATH_FILE_STOCKS_PRICES)
 
     report_file_path = cfg.REPORT_DIR / "simple_stock_report.html"
     create_simple_report(df, report_file_path, eur_currencies_prices)
