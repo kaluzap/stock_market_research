@@ -124,17 +124,24 @@ def create_stocks_df(
             lambda r: round(_make_currency_transformation(r, col), 2), axis=1
         )
 
+
     if "exDividendDate" in df.columns:
 
-        def _create_date(x: str)-> str:
-            if math.isnan(x):
+        def _create_date(row: str)-> str:
+            if math.isnan(row["exDividendDate"]):
                 return "---"
-            stock_date = datetime.fromtimestamp(float(x))
-            if datetime.now() > stock_date:
-                return f"old {stock_date.strftime("%Y-%m-%d")}"
-            return stock_date.strftime("%Y-%m-%d")
+            stock_date = datetime.fromtimestamp(float(row["exDividendDate"]))
 
-        df["exDividendDate"] = df["exDividendDate"].map(_create_date)
+            delta_days = "(?)"
+            if not math.isnan(row["lastDividendDate"]):
+                last_date = datetime.fromtimestamp(float(row["lastDividendDate"]))
+                delta_days = f"({(stock_date - last_date).days})"
+
+            if datetime.now() > stock_date:
+                return f'old {stock_date.strftime("%Y-%m-%d")} {delta_days}'
+            return f'{stock_date.strftime("%Y-%m-%d")} {delta_days}'
+
+        df["exDividendDate"] = df.apply(lambda row: _create_date(row), axis=1)
 
     # Remove columns
     df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
