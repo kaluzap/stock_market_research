@@ -22,7 +22,7 @@ WANTED_COLUMNS = [
     "change",
     "recommendationKey",
     "dividendYield",
-    "epsTrailingTwelveMonths",
+    "exDividendDate",
 ]
 
 COLUMNS_NEED_CURRENCY_CONVERTION = [

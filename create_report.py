@@ -6,6 +6,7 @@ from utils import stock_data
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
+import math
 
 
 data_file_path = cfg.TEMP_DIR / cfg.FILE_STOCK_DATA
@@ -122,6 +123,18 @@ def create_stocks_df(
         df[col] = df.apply(
             lambda r: round(_make_currency_transformation(r, col), 2), axis=1
         )
+
+    if "exDividendDate" in df.columns:
+
+        def _create_date(x: str)-> str:
+            if math.isnan(x):
+                return "---"
+            stock_date = datetime.fromtimestamp(float(x))
+            if datetime.now() > stock_date:
+                return f"old {stock_date.strftime("%Y-%m-%d")}"
+            return stock_date.strftime("%Y-%m-%d")
+
+        df["exDividendDate"] = df["exDividendDate"].map(_create_date)
 
     # Remove columns
     df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
