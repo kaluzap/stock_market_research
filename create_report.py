@@ -44,6 +44,21 @@ def actualize_stock_data(data_path_dir: Path):
     )
 
 
+def add_colors_to_table(table: str)->str:
+    new_table_lines = []
+    for line in table.split("\n"):
+        line_new = line
+        if (line.count('-') == 2) and (line.count('20')>=1):
+            if "old" in line:
+                line_new = line.replace('align="center"', 'align="center", bgcolor="orange"')
+            else:
+                line_new = line.replace('align="center"', 'align="center", bgcolor="lime"')
+        if "strong_buy" in line:
+            line_new = line.replace('align="center"', 'align="center", bgcolor="lime"')
+        new_table_lines.append(line_new)
+    return "\n".join(new_table_lines)
+
+
 def create_simple_report(
     df: pd.DataFrame, report_file_path: Path, eur_usd_price: float
 ):
@@ -66,7 +81,9 @@ def create_simple_report(
     report_file.write(text + "\n")
 
     table = df.to_html(escape=False, justify="center")
-    report_file.write(table.replace("<td>", '<td align="center">'))
+    table = table.replace("<td>", '<td align="center">')
+    table = add_colors_to_table(table)
+    report_file.write(table)
 
     report_file.close()
 
