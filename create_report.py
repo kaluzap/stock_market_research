@@ -44,15 +44,19 @@ def actualize_stock_data(data_path_dir: Path):
     )
 
 
-def add_colors_to_table(table: str)->str:
+def add_colors_to_table(table: str) -> str:
     new_table_lines = []
     for line in table.split("\n"):
         line_new = line
-        if (line.count('-') == 2) and (line.count('20')>=1):
+        if (line.count("-") == 2) and (line.count("20") >= 1):
             if "old" in line:
-                line_new = line.replace('align="center"', 'align="center", bgcolor="orange"')
+                line_new = line.replace(
+                    'align="center"', 'align="center", bgcolor="orange"'
+                )
             else:
-                line_new = line.replace('align="center"', 'align="center", bgcolor="lime"')
+                line_new = line.replace(
+                    'align="center"', 'align="center", bgcolor="lime"'
+                )
         if "strong_buy" in line:
             line_new = line.replace('align="center"', 'align="center", bgcolor="lime"')
         new_table_lines.append(line_new)
@@ -106,14 +110,64 @@ def create_stocks_df(
     df["gsymbol"] = df["symbol"].map(lambda x: symbol_gsymbol.get(x, None))
 
     # Add possible percentage change
-    df["change"] = df.apply(lambda row: round(100*(row["targetMeanPrice"] - row["regularMarketPrice"])/row["regularMarketPrice"],2), axis=1)
+    df["change"] = df.apply(
+        lambda row: round(
+            100
+            * (row["targetMeanPrice"] - row["regularMarketPrice"])
+            / row["regularMarketPrice"],
+            2,
+        ),
+        axis=1,
+    )
+
+    # Add my classification
+    def my_classification(row: pd.Series) -> str:
+        """
+        Letras:
+        A sin datos sobre ganancias
+        B no da ganancias
+        C da ganancias
+        D da ganancias y dividendos
+        X no deberia existir
+
+        Signos:
+        ? sin datos
+        - se espera que el precio baje
+        + se espera que el precio suba
+        """
+        classification = ""
+        grossMargins = row["grossMargins"]
+        if math.isnan(grossMargins):
+            classification = "A"
+        elif grossMargins <= 0:
+            classification = "B"
+        else:
+            dividendYield = row["dividendYield"]
+            if math.isnan(dividendYield):
+                classification = "C"
+            elif dividendYield > 0:
+                classification = "D"
+            else:
+                # this cannot be true
+                classification = "X"
+        change = row["change"]
+        if math.isnan(change):
+            return classification + "?"
+        else:
+            if change < 0:
+                return classification + "-"
+            elif change == 0:
+                return classification
+            else:
+                return classification + "+"
+
+    df["classification"] = df.apply(lambda r: my_classification(r), axis=1)
 
     # Sorting DF
     try:
         df = df.sort_values(by=[sort_by])
     except KeyError:
         print(f"ERROR: unknown column '{sort_by}'.")
-
 
     # Transform currencies to EUR
     df["currency"] = df["currency"].map(lambda x: x.upper())
@@ -141,10 +195,9 @@ def create_stocks_df(
             lambda r: round(_make_currency_transformation(r, col), 2), axis=1
         )
 
-
     if "exDividendDate" in df.columns:
 
-        def _create_date(row: str)-> str:
+        def _create_date(row: str) -> str:
             if math.isnan(row["exDividendDate"]):
                 return "---"
             stock_date = datetime.fromtimestamp(float(row["exDividendDate"]))
@@ -178,16 +231,19 @@ def create_stocks_df(
     df = df.reset_index(drop=True)
 
     # yahoo link
-    df["yahoo_link"] = df.apply(lambda x: f'<a href="https://finance.yahoo.com/quote/{x["symbol"]}" target="_blank">[link]</a>', axis=1)
+    df["yahoo_link"] = df.apply(
+        lambda x: f'<a href="https://finance.yahoo.com/quote/{x["symbol"]}" target="_blank">[link]</a>',
+        axis=1,
+    )
 
     # google link
-    def _make_google_link(row: pd.Series)-> str:
+    def _make_google_link(row: pd.Series) -> str:
         try:
             if row["gsymbol"] == "nan":
                 return ""
             text = f'<a href="https://www.google.com/finance/quote/{row["gsymbol"]}" target="_blank">[link]</a>'
             return text
-        except KeyError as e:
+        except KeyError:
             return ""
 
     df["google_link"] = df.apply(lambda row: _make_google_link(row), axis=1)
@@ -203,7 +259,7 @@ def main(data_path_dir: Path, sort_by: str, column_value: str, actualize: bool):
     df, eur_currencies_prices = create_stocks_df(data_path_dir, sort_by, column_value)
 
     # send a copy for other uses
-    df[["my_name","isin","regularMarketPrice"]].to_csv(PATH_FILE_STOCKS_PRICES)
+    df[["my_name", "isin", "regularMarketPrice"]].to_csv(PATH_FILE_STOCKS_PRICES)
 
     report_file_path = cfg.REPORT_DIR / "simple_stock_report.html"
     create_simple_report(df, report_file_path, eur_currencies_prices)
@@ -253,9 +309,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(
-        args.data_path_dir,
-        args.sort_by,
-        args.column_value,
-        args.actualize
-    )
+    main(args.data_path_dir, args.sort_by, args.column_value, args.actualize)

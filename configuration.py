@@ -23,6 +23,7 @@ WANTED_COLUMNS = [
     "recommendationKey",
     "dividendYield",
     "exDividendDate",
+    "classification",
 ]
 
 COLUMNS_NEED_CURRENCY_CONVERTION = [
