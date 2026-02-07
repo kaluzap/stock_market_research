@@ -92,9 +92,7 @@ def create_simple_report(
     report_file.close()
 
 
-def create_stocks_df(
-    data_path_dir: Path, sort_by: str, column_value: str
-) -> tuple[pd.DataFrame, float]:
+def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
 
     # Load data
     df = stock_data.load_stock_data(data_file_path)
@@ -163,12 +161,6 @@ def create_stocks_df(
 
     df["classification"] = df.apply(lambda r: my_classification(r), axis=1)
 
-    # Sorting DF
-    try:
-        df = df.sort_values(by=[sort_by])
-    except KeyError:
-        print(f"ERROR: unknown column '{sort_by}'.")
-
     # Transform currencies to EUR
     df["currency"] = df["currency"].map(lambda x: x.upper())
     print(df["currency"].value_counts())
@@ -216,20 +208,6 @@ def create_stocks_df(
     # Remove columns
     df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
 
-    # Filtering if column and value
-    df = df.astype(str)
-    try:
-        col = column_value.split(":")[0]
-        value = column_value.split(":")[1]
-    except IndexError:
-        col, value = "", ""
-    if col and value:
-        try:
-            df = df[df[col] == value].copy()
-        except KeyError:
-            print(f"ERROR: unknown column '{col}'.")
-    df = df.reset_index(drop=True)
-
     # yahoo link
     df["yahoo_link"] = df.apply(
         lambda x: f'<a href="https://finance.yahoo.com/quote/{x["symbol"]}" target="_blank">[link]</a>',
@@ -251,15 +229,47 @@ def create_stocks_df(
     return df, eur_currencies_prices
 
 
+def filter_stocks_df(
+    df: pd.DataFrame,
+    sort_by: str,
+    column_value: str,
+) -> pd.DataFrame:
+
+    df = df.astype(str)
+
+    # Sorting DF
+    try:
+        df = df.sort_values(by=[sort_by])
+    except KeyError:
+        print(f"ERROR: unknown column '{sort_by}'.")
+
+    # Filtering if column and value
+    try:
+        col = column_value.split(":")[0]
+        value = column_value.split(":")[1]
+    except IndexError:
+        col, value = "", ""
+    if col and value:
+        try:
+            df = df[df[col] == value].copy()
+        except KeyError:
+            print(f"ERROR: unknown column '{col}'.")
+    df = df.reset_index(drop=True)
+
+    return df
+
+
 def main(data_path_dir: Path, sort_by: str, column_value: str, actualize: bool):
 
     if actualize:
         actualize_stock_data(data_path_dir)
 
-    df, eur_currencies_prices = create_stocks_df(data_path_dir, sort_by, column_value)
+    df, eur_currencies_prices = create_stocks_df(data_path_dir)
 
     # send a copy for other uses
     df[["my_name", "isin", "regularMarketPrice"]].to_csv(PATH_FILE_STOCKS_PRICES)
+
+    df = filter_stocks_df(df, sort_by, column_value)
 
     report_file_path = cfg.REPORT_DIR / "simple_stock_report.html"
     create_simple_report(df, report_file_path, eur_currencies_prices)
