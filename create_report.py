@@ -44,52 +44,159 @@ def actualize_stock_data(data_path_dir: Path):
     )
 
 
-def add_colors_to_table(table: str) -> str:
-    new_table_lines = []
-    for line in table.split("\n"):
-        line_new = line
-        if (line.count("-") == 2) and (line.count("20") >= 1):
-            if "old" in line:
-                line_new = line.replace(
-                    'align="center"', 'align="center", bgcolor="orange"'
-                )
-            else:
-                line_new = line.replace(
-                    'align="center"', 'align="center", bgcolor="lime"'
-                )
-        if "strong_buy" in line:
-            line_new = line.replace('align="center"', 'align="center", bgcolor="lime"')
-        new_table_lines.append(line_new)
-    return "\n".join(new_table_lines)
-
-
 def create_simple_report(
-    df: pd.DataFrame, report_file_path: Path, eur_usd_price: float
+    df: pd.DataFrame, report_file_path: Path, eur_usd_price: dict
 ):
+    last_update = load_request_time()
+    
+    # Currency info string
+    currency_info = " | ".join([f"1 EUR = {amount} {currency}" for currency, amount in eur_usd_price.items()])
 
-    report_file = open(report_file_path, "w")
+    # Identify numeric columns for Tablesort
+    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+    
+    # Pre-process the dataframe for display while keeping it numeric for identification
+    display_df = df.copy()
+    
+    # Colorize 'change' column if it's numeric
+    if 'change' in display_df.columns and pd.api.types.is_numeric_dtype(display_df['change']):
+        def color_change(val):
+            try:
+                v = float(val)
+                if math.isnan(v): return "---"
+                cls = "positive" if v > 0 else ("negative" if v < 0 else "neutral")
+                return f'<span class="{cls}">{v}%</span>'
+            except (ValueError, TypeError):
+                return str(val)
+        display_df['change'] = display_df['change'].apply(color_change)
 
-    # Label
-    text = '<p><font size="8" color="black">STOCKS SIMPLE REPORT</font></p>'
-    report_file.write(text + "\n")
+    table_html = display_df.to_html(escape=False, index=False, border=0)
+    
+    # Post-processing the table HTML to add dynamic classes and sort methods
+    lines = table_html.split("\n")
+    processed_lines = []
+    
+    for line in lines:
+        if "<td>old" in line:
+            line = line.replace("<td>", '<td class="ex-dividend-old">')
+        elif "<td>20" in line and "-" in line: # Assuming date format YYYY-MM-DD
+            line = line.replace("<td>", '<td class="ex-dividend-soon">')
+        
+        # Colorize classification
+        if "<td>D" in line:
+            line = line.replace("<td>D", '<td class="classification-D">D')
+        elif "<td>C" in line:
+            line = line.replace("<td>C", '<td class="classification-C">C')
+        elif "<td>B" in line:
+            line = line.replace("<td>B", '<td class="classification-B">B')
+        elif "<td>A" in line:
+            line = line.replace("<td>A", '<td class="classification-A">A')
 
-    text = ""
-    for currency, amount in eur_usd_price.items():
-        text += f"1 EUR = {amount} {currency}<br>"
-    text = f'<p><font size="2" color="red">{text}</font></p>'
-    report_file.write(text + "\n")
+        # Add data-sort-method="number" to headers of numeric columns
+        if "<th>" in line:
+            for col in numeric_cols:
+                if f"<th>{col}</th>" in line:
+                    line = line.replace(f"<th>{col}</th>", f'<th data-sort-method="number">{col}</th>')
 
-    text = (
-        f'<p><font size="2" color="red">Last update: {load_request_time()}</font></p>'
-    )
-    report_file.write(text + "\n")
+        processed_lines.append(line)
+    
+    table_html = "\n".join(processed_lines)
+    # Add table-specific class for CSS
+    table_html = table_html.replace("<table>", '<table id="stock-table">')
 
-    table = df.to_html(escape=False, justify="center")
-    table = table.replace("<td>", '<td align="center">')
-    table = add_colors_to_table(table)
-    report_file.write(table)
+    # Prepare the HTML template with modern CSS and JS for sorting
+    html_template = f"""
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.number.min.js"></script>
+    <title>Stock Market Research Report</title>
+    <style>
+        :root {{
+            --primary: #2c3e50;
+        }}
+        body {{
+            padding: 20px;
+            font-size: 0.85rem;
+        }}
+        .header-section {{
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 1rem;
+        }}
+        h1 {{
+            margin-bottom: 0.2rem;
+            color: var(--primary);
+        }}
+        .header-info {{
+            color: #666;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        th {{
+            background-color: var(--primary);
+            color: white !important;
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }}
+        th[aria-sort="descending"]::after {{ content: " ▼"; }}
+        th[aria-sort="ascending"]::after {{ content: " ▲"; }}
+        td, th {{
+            text-align: center !important;
+            padding: 6px 12px !important;
+            border: 1px solid #ddd !important;
+        }}
+        .positive {{ color: #27ae60 !important; font-weight: bold; }}
+        .negative {{ color: #e74c3c !important; font-weight: bold; }}
+        .neutral {{ color: #7f8c8d !important; }}
+        .ex-dividend-soon {{ background-color: #d4edda !important; font-weight: bold; }}
+        .ex-dividend-old {{ background-color: #fff3cd !important; color: #856404; opacity: 0.8; }}
+        .recommendation-buy {{ font-weight: bold; color: #2980b9; }}
+        .classification-D {{ border-left: 5px solid #27ae60 !important; }}
+        .classification-C {{ border-left: 5px solid #3498db !important; }}
+        .classification-B {{ border-left: 5px solid #e67e22 !important; }}
+        .classification-A {{ border-left: 5px solid #7f8c8d !important; }}
+        tr:hover {{ background-color: #f5f6fa !important; }}
+        a {{ text-decoration: none; font-weight: bold; }}
+    </style>
+</head>
+<body>
+    <main class="container-fluid">
+        <div class="header-section">
+            <hgroup>
+                <h1>Stock Market Research Report</h1>
+                <div class="header-info">
+                    <span><strong>Last update:</strong> {last_update}</span>
+                    <span><strong>Exchange Rates:</strong> {currency_info}</span>
+                </div>
+            </hgroup>
+        </div>
 
-    report_file.close()
+        <div style="overflow-x: auto;">
+            {table_html}
+        </div>
+    </main>
+    <script>
+        new Tablesort(document.querySelector('table'));
+    </script>
+</body>
+</html>
+"""
+    
+    with open(report_file_path, "w") as f:
+        f.write(html_template)
 
 
 def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
@@ -235,8 +342,6 @@ def filter_stocks_df(
     column_value: str,
 ) -> pd.DataFrame:
 
-    df = df.astype(str)
-
     # Sorting DF
     try:
         df = df.sort_values(by=[sort_by])
@@ -251,7 +356,7 @@ def filter_stocks_df(
         col, value = "", ""
     if col and value:
         try:
-            df = df[df[col] == value].copy()
+            df = df[df[col].astype(str) == value].copy()
         except KeyError:
             print(f"ERROR: unknown column '{col}'.")
     df = df.reset_index(drop=True)
