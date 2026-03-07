@@ -44,58 +44,68 @@ def actualize_stock_data(data_path_dir: Path):
     )
 
 
-def create_simple_report(
-    df: pd.DataFrame, report_file_path: Path, eur_usd_price: dict
-):
+def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price: dict):
     last_update = load_request_time()
-    
+
     # Currency info string
-    currency_info = " | ".join([f"1 EUR = {amount} {currency}" for currency, amount in eur_usd_price.items()])
+    currency_info = " | ".join(
+        [f"1 EUR = {amount} {currency}" for currency, amount in eur_usd_price.items()]
+    )
 
     # Identify numeric columns for Tablesort
-    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-    
+    numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+
     # Pre-process the dataframe for display while keeping it numeric for identification
     display_df = df.copy()
-    
+
     # Colorize 'change' column if it's numeric
-    if 'change' in display_df.columns and pd.api.types.is_numeric_dtype(display_df['change']):
+    if "change" in display_df.columns and pd.api.types.is_numeric_dtype(
+        display_df["change"]
+    ):
+
         def color_change(val):
             try:
                 v = float(val)
-                if math.isnan(v): return "---"
+                if math.isnan(v):
+                    return "---"
                 cls = "positive" if v > 0 else ("negative" if v < 0 else "neutral")
                 return f'<span class="{cls}">{v}%</span>'
             except (ValueError, TypeError):
                 return str(val)
-        display_df['change'] = display_df['change'].apply(color_change)
+
+        display_df["change"] = display_df["change"].apply(color_change)
 
     table_html = display_df.to_html(escape=False, index=False, border=0)
-    
+
     # Post-processing the table HTML to add dynamic classes and sort methods
     lines = table_html.split("\n")
     processed_lines = []
-    
+
     for line in lines:
         if "<td>old" in line:
             line = line.replace("<td>", '<td class="ex-dividend-old">')
-        elif "<td>20" in line and "-" in line: # Assuming date format YYYY-MM-DD
+        elif "<td>20" in line and "-" in line:  # Assuming date format YYYY-MM-DD
             line = line.replace("<td>", '<td class="ex-dividend-soon">')
-        
+
         # Colorize classification (matching the specific pattern for the classification column)
         # The classification column values are like "D+", "A-", "C?", etc.
         # We target the pattern <td>[A-D][+|-|?]?</td>
         import re
-        line = re.sub(r'<td>([A-D][\+\-\?]?)</td>', r'<td class="classification-\1">\1</td>', line)
+
+        line = re.sub(
+            r"<td>([A-D][\+\-\?]?)</td>", r'<td class="classification-\1">\1</td>', line
+        )
 
         # Add data-sort-method="number" to headers of numeric columns
         if "<th>" in line:
             for col in numeric_cols:
                 if f"<th>{col}</th>" in line:
-                    line = line.replace(f"<th>{col}</th>", f'<th data-sort-method="number">{col}</th>')
+                    line = line.replace(
+                        f"<th>{col}</th>", f'<th data-sort-method="number">{col}</th>'
+                    )
 
         processed_lines.append(line)
-    
+
     table_html = "\n".join(processed_lines)
     # Add table-specific class for CSS
     table_html = table_html.replace("<table>", '<table id="stock-table">')
@@ -306,7 +316,7 @@ def create_simple_report(
 </body>
 </html>
 """
-    
+
     with open(report_file_path, "w") as f:
         f.write(html_template)
 
