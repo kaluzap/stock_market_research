@@ -82,15 +82,11 @@ def create_simple_report(
         elif "<td>20" in line and "-" in line: # Assuming date format YYYY-MM-DD
             line = line.replace("<td>", '<td class="ex-dividend-soon">')
         
-        # Colorize classification
-        if "<td>D" in line:
-            line = line.replace("<td>D", '<td class="classification-D">D')
-        elif "<td>C" in line:
-            line = line.replace("<td>C", '<td class="classification-C">C')
-        elif "<td>B" in line:
-            line = line.replace("<td>B", '<td class="classification-B">B')
-        elif "<td>A" in line:
-            line = line.replace("<td>A", '<td class="classification-A">A')
+        # Colorize classification (matching the specific pattern for the classification column)
+        # The classification column values are like "D+", "A-", "C?", etc.
+        # We target the pattern <td>[A-D][+|-|?]?</td>
+        import re
+        line = re.sub(r'<td>([A-D][\+\-\?]?)</td>', r'<td class="classification-\1">\1</td>', line)
 
         # Add data-sort-method="number" to headers of numeric columns
         if "<th>" in line:
@@ -164,11 +160,11 @@ def create_simple_report(
         .ex-dividend-soon {{ background-color: #d4edda !important; font-weight: bold; }}
         .ex-dividend-old {{ background-color: #fff3cd !important; color: #856404; opacity: 0.8; }}
         .recommendation-buy {{ font-weight: bold; color: #2980b9; }}
-        .classification-D {{ border-left: 5px solid #27ae60 !important; }}
-        .classification-C {{ border-left: 5px solid #3498db !important; }}
-        .classification-B {{ border-left: 5px solid #e67e22 !important; }}
-        .classification-A {{ border-left: 5px solid #7f8c8d !important; }}
-        tr:hover {{ background-color: #f5f6fa !important; }}
+        [class*="classification-D"] {{ border-left: 5px solid #27ae60 !important; }}
+        [class*="classification-C"] {{ border-left: 5px solid #3498db !important; }}
+        [class*="classification-B"] {{ border-left: 5px solid #e67e22 !important; }}
+        [class*="classification-A"] {{ border-left: 5px solid #7f8c8d !important; }}
+        tr:hover {{ background-color: #cbd5e1 !important; outline: 1px solid var(--primary) !important; }}
         a {{ text-decoration: none; font-weight: bold; }}
     </style>
 </head>
@@ -177,10 +173,36 @@ def create_simple_report(
         <div class="header-section">
             <hgroup>
                 <h1>Stock Market Research Report</h1>
-                <div class="header-info">
-                    <span><strong>Last update:</strong> {last_update}</span>
+                <div class="header-info" style="display: block;">
+                    <span><strong>Last update:</strong> {last_update}</span><br>
                     <span><strong>Exchange Rates:</strong> {currency_info}</span>
                 </div>
+                <div style="margin-top: 1rem; display: flex; gap: 10px; align-items: center;">
+                    <button onclick="actualizeData()" id="actualize-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; width: auto; margin-bottom: 0;">Actualize Data</button>
+                    <button onclick="refreshReport()" id="refresh-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; width: auto; margin-bottom: 0; background-color: #34495e; border-color: #34495e;">Refresh Report</button>
+                    <button onclick="filterDPlus()" id="filter-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; width: auto; margin-bottom: 0; background-color: #34495e; border-color: #34495e;">Filter D+</button>
+                    <span id="actualize-status" style="font-weight: bold; font-size: 0.8rem;"></span>
+                </div>
+                
+                <details style="margin-top: 1rem; font-size: 0.75rem;">
+                    <summary style="cursor: pointer; color: var(--primary); font-weight: bold;">Classification Help</summary>
+                    <div style="display: flex; gap: 40px; padding: 10px; background: #f9f9f9; border-radius: 5px; margin-top: 5px;">
+                        <div>
+                            <strong>Letters:</strong><br>
+                            A: no earnings data<br>
+                            B: no earnings<br>
+                            C: has earnings<br>
+                            D: has earnings and dividends<br>
+                            X: should not exist
+                        </div>
+                        <div>
+                            <strong>Signs:</strong><br>
+                            ?: no data<br>
+                            -: price expected to go down<br>
+                            +: price expected to go up
+                        </div>
+                    </div>
+                </details>
             </hgroup>
         </div>
 
@@ -190,6 +212,96 @@ def create_simple_report(
     </main>
     <script>
         new Tablesort(document.querySelector('table'));
+
+        async function actualizeData() {{
+            const btn = document.getElementById('actualize-btn');
+            const status = document.getElementById('actualize-status');
+            
+            btn.setAttribute('aria-busy', 'true');
+            btn.disabled = true;
+            status.innerText = 'Actualizing...';
+            status.style.color = 'inherit';
+
+            try {{
+                const response = await fetch('http://localhost:5000/actualize', {{ method: 'POST' }});
+                if (response.ok) {{
+                    status.innerText = 'Success! Reloading...';
+                    status.style.color = '#27ae60';
+                    setTimeout(() => window.location.reload(), 1500);
+                }} else {{
+                    const data = await response.json();
+                    status.innerText = 'Error: ' + (data.error || 'unknown');
+                    status.style.color = '#e74c3c';
+                    btn.setAttribute('aria-busy', 'false');
+                    btn.disabled = false;
+                }}
+            }} catch (err) {{
+                status.innerText = 'Failed to connect to server.';
+                status.style.color = '#e74c3c';
+                btn.setAttribute('aria-busy', 'false');
+                btn.disabled = false;
+            }}
+        }}
+
+        async function refreshReport() {{
+            const btn = document.getElementById('refresh-btn');
+            const status = document.getElementById('actualize-status');
+            
+            btn.setAttribute('aria-busy', 'true');
+            btn.disabled = true;
+            status.innerText = 'Refreshing...';
+            status.style.color = 'inherit';
+
+            try {{
+                const response = await fetch('http://localhost:5000/refresh', {{ method: 'POST' }});
+                if (response.ok) {{
+                    status.innerText = 'Success! Reloading...';
+                    status.style.color = '#27ae60';
+                    setTimeout(() => window.location.reload(), 1000);
+                }} else {{
+                    const data = await response.json();
+                    status.innerText = 'Error: ' + (data.error || 'unknown');
+                    status.style.color = '#e74c3c';
+                    btn.setAttribute('aria-busy', 'false');
+                    btn.disabled = false;
+                }}
+            }} catch (err) {{
+                status.innerText = 'Failed to connect to server.';
+                status.style.color = '#e74c3c';
+                btn.setAttribute('aria-busy', 'false');
+                btn.disabled = false;
+            }}
+        }}
+
+        async function filterDPlus() {{
+            const btn = document.getElementById('filter-btn');
+            const status = document.getElementById('actualize-status');
+            
+            btn.setAttribute('aria-busy', 'true');
+            btn.disabled = true;
+            status.innerText = 'Filtering...';
+            status.style.color = 'inherit';
+
+            try {{
+                const response = await fetch('http://localhost:5000/filter', {{ method: 'POST' }});
+                if (response.ok) {{
+                    status.innerText = 'Success! Reloading...';
+                    status.style.color = '#27ae60';
+                    setTimeout(() => window.location.reload(), 1000);
+                }} else {{
+                    const data = await response.json();
+                    status.innerText = 'Error: ' + (data.error || 'unknown');
+                    status.style.color = '#e74c3c';
+                    btn.setAttribute('aria-busy', 'false');
+                    btn.disabled = false;
+                }}
+            }} catch (err) {{
+                status.innerText = 'Failed to connect to server.';
+                status.style.color = '#e74c3c';
+                btn.setAttribute('aria-busy', 'false');
+                btn.disabled = false;
+            }}
+        }}
     </script>
 </body>
 </html>
@@ -228,17 +340,17 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     # Add my classification
     def my_classification(row: pd.Series) -> str:
         """
-        Letras:
-        A sin datos sobre ganancias
-        B no da ganancias
-        C da ganancias
-        D da ganancias y dividendos
-        X no deberia existir
+        Letters:
+        A: no earnings data
+        B: no earnings
+        C: has earnings
+        D: has earnings and dividends
+        X: should not exist
 
-        Signos:
-        ? sin datos
-        - se espera que el precio baje
-        + se espera que el precio suba
+        Signs:
+        ?: no data
+        -: price expected to go down
+        +: price expected to go up
         """
         classification = ""
         grossMargins = row["grossMargins"]
