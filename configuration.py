@@ -5,11 +5,13 @@ BASE_DIR = (Path(__file__).parent).resolve()
 DATA_DIR = BASE_DIR / "data"
 REPORT_DIR = BASE_DIR / "reports"
 TEMP_DIR = BASE_DIR / "temp"
+TEMPLATES_DIR = BASE_DIR / "templates"
 
 # Files
 FILE_STOCK_DATA = "stock_data.json"
 FILE_STOCK_LIST = "list_of_stocks.csv"
 FILE_REQUEST_TIME = "request_time.txt"
+FILE_REPORT_TEMPLATE = "report_template.html"
 
 WANTED_COLUMNS = [
     "symbol",
