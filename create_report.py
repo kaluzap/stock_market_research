@@ -193,6 +193,7 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     df["classification"] = df.apply(lambda r: my_classification(r), axis=1)
 
     # Transform currencies to EUR
+    df = df[df["currency"].map(lambda x: isinstance(x,str))].copy()
     df["currency"] = df["currency"].map(lambda x: x.upper())
     print(df["currency"].value_counts())
     eur_currencies_prices = dict()
