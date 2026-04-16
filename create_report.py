@@ -194,7 +194,7 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
 
     # Transform currencies to EUR
     df = df[df["currency"].map(lambda x: isinstance(x,str))].copy()
-    df["currency"] = df["currency"].map(lambda x: x.upper())
+    #df["currency"] = df["currency"].map(lambda x: x.upper())
     print(df["currency"].value_counts())
     eur_currencies_prices = dict()
     for currency_symbol in cfg.CURRENCIES:
@@ -203,6 +203,8 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
         except IndexError:
             continue
         eur_currencies_prices[row["currency"]] = float(row["ask"])
+    # Adding GBp
+    eur_currencies_prices["GBp"] = eur_currencies_prices["GBP"]*100.0
     print(eur_currencies_prices)
 
     def _make_currency_transformation(row: pd.Series, col):
