@@ -1,0 +1,12 @@
+README.md
+configuration.py
+create_report.py
+find_yahoo_id.py
+pyproject.toml
+server.py
+stock_market_research.egg-info/PKG-INFO
+stock_market_research.egg-info/SOURCES.txt
+stock_market_research.egg-info/dependency_links.txt
+stock_market_research.egg-info/requires.txt
+stock_market_research.egg-info/top_level.txt
+utils/stock_data.py
