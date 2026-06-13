@@ -1,45 +1,67 @@
 # Stock Market Research
 
-This tool provides a report on stock market data using `yfinance`.
+This tool provides an automated research report on stock market data using `yfinance`. It is designed as a professional data pipeline with a web-based dashboard.
+
+## Features
+
+- **Automated Data Pipeline:** Downloads and processes stock data, handles currency conversion (to EUR), and generates custom classifications.
+- **Privacy First:** Supports a dual-data structure. Prioritizes `my_data/` for personal use while falling back to `data/` for public samples.
+- **Interactive Dashboard:** Flask-based web interface with client-side sorting and one-click data actualization.
+- **Testing Suite:** Robust unit testing using `pytest` and `mocker` to ensure data integrity.
+
+## Installation
+
+1. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/bin/activate
+   ```
+
+2. Install the project in editable mode:
+   ```bash
+   pip install -e .
+   ```
 
 ## How to use
 
-### 1. Installation
+### 1. Web Dashboard (Recommended)
 
-Ensure you have the required dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Generate Report (CLI)
-
-To generate the report once from the terminal:
-
-```bash
-# Basic report
-python create_report.py -d my_data/
-
-# Report with data actualization (downloads new data)
-python create_report.py -d my_data/ -a
-```
-
-### 3. Web Dashboard (Recommended)
-
-To run a web server that allows viewing and updating the report from the browser:
+To run the web server:
 
 ```bash
 python server.py
 ```
 
 - **View Report:** Open `http://localhost:5000` in your browser.
-- **Actualize Data:** Click the **"Actualize Data"** button in the header to download the latest stock information and refresh the page.
+- **Actions:** Use the buttons in the header to **Actualize Data**, **Refresh** the report, or **Filter** for high-quality (D+) stocks.
 
-## File Structure
+### 2. Generate Report (CLI)
 
-- `create_report.py`: Main script to generate the HTML report.
-- `server.py`: Flask server to host the dashboard.
-- `configuration.py`: Project settings and data configurations.
-- `my_data/`: Directory containing stock lists and configurations.
+You can run the pipeline directly from the terminal:
+
+```bash
+# Basic report using default data
+python data_pipeline/create_report.py
+
+# Report with data actualization (downloads new data)
+python data_pipeline/create_report.py -a
+```
+
+### 3. Running Tests
+
+To verify the logic and data integrity:
+
+```bash
+pytest tests/
+```
+
+## Project Structure
+
+- `data_pipeline/`: Core logic for data processing and report generation.
+- `server.py`: Flask web application for the dashboard.
+- `configuration.py`: Centralized management of paths, currencies, and report columns.
+- `utils/`: Reusable utilities for stock data retrieval.
+- `data/`: Sample stock lists for demonstration.
+- `my_data/`: (Ignored by git) Private directory for your personal stock lists.
 - `reports/`: Location of generated HTML reports.
-- `utils/`: Data processing utilities.
+- `tests/`: Automated test suite.
