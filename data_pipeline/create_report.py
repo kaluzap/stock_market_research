@@ -200,12 +200,23 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     for currency_symbol in cfg.CURRENCIES:
         try:
             row = df[df["symbol"] == currency_symbol].iloc[0]
+            # Try multiple keys to find a valid price
+            price = None
+            for key in ["regularMarketPrice", "currentPrice", "ask", "bid", "previousClose"]:
+                if key in row and pd.notnull(row[key]):
+                    price = float(row[key])
+                    break
+            
+            if price is not None:
+                eur_currencies_prices[row["currency"]] = price
         except IndexError:
             continue
-        eur_currencies_prices[row["currency"]] = float(row["ask"])
-    # Adding GBp
-    eur_currencies_prices["GBp"] = eur_currencies_prices["GBP"] * 100.0
-    print(eur_currencies_prices)
+    
+    # Adding GBp (Pence) to GBP transformation
+    if "GBP" in eur_currencies_prices:
+        eur_currencies_prices["GBp"] = eur_currencies_prices["GBP"] * 100.0
+    
+    print("Detected Exchange Rates:", eur_currencies_prices)
 
     def _make_currency_transformation(row: pd.Series, col):
         if row["currency"] == "EUR":
