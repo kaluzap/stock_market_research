@@ -34,7 +34,7 @@ def actualize_stock_data(data_path_dir: Path):
     df = pd.read_csv(file_with_stocks_list)
 
     # Add always EUR to transform USD to EUR.
-    list_of_stocks = list(set(df["symbol"])) + cfg.CURRENCIES
+    list_of_stocks = list(set(df["ysymbol"])) + cfg.CURRENCIES
     print(f"Downloading data for: {list_of_stocks}")
 
     save_request_time()
@@ -125,15 +125,15 @@ def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price
 
 def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
 
-    # Load data
+    # Load data from yfinance
     df = stock_data.load_stock_data(data_file_path)
 
     # Add my names and isin as columns
     file_with_stocks_list = data_path_dir / cfg.FILE_STOCK_LIST
     df_symbol_name = pd.read_csv(file_with_stocks_list)
-    symbol_name = dict(zip(df_symbol_name["symbol"], df_symbol_name["name"]))
-    symbol_isin = dict(zip(df_symbol_name["symbol"], df_symbol_name["isin"]))
-    symbol_gsymbol = dict(zip(df_symbol_name["symbol"], df_symbol_name["gsymbol"]))
+    symbol_name = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["name"]))
+    symbol_isin = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["isin"]))
+    symbol_gsymbol = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["gsymbol"]))
     df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x, None))
     df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x, None))
     df["gsymbol"] = df["symbol"].map(lambda x: symbol_gsymbol.get(x, None))
@@ -193,8 +193,8 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     df["classification"] = df.apply(lambda r: my_classification(r), axis=1)
 
     # Transform currencies to EUR
-    df = df[df["currency"].map(lambda x: isinstance(x,str))].copy()
-    #df["currency"] = df["currency"].map(lambda x: x.upper())
+    df = df[df["currency"].map(lambda x: isinstance(x, str))].copy()
+    # df["currency"] = df["currency"].map(lambda x: x.upper())
     print(df["currency"].value_counts())
     eur_currencies_prices = dict()
     for currency_symbol in cfg.CURRENCIES:
@@ -204,7 +204,7 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
             continue
         eur_currencies_prices[row["currency"]] = float(row["ask"])
     # Adding GBp
-    eur_currencies_prices["GBp"] = eur_currencies_prices["GBP"]*100.0
+    eur_currencies_prices["GBp"] = eur_currencies_prices["GBP"] * 100.0
     print(eur_currencies_prices)
 
     def _make_currency_transformation(row: pd.Series, col):
@@ -239,9 +239,6 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
 
         df["exDividendDate"] = df.apply(lambda row: _create_date(row), axis=1)
 
-    # Remove columns
-    df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
-
     # yahoo link
     df["yahoo_link"] = df.apply(
         lambda x: f'<a href="https://finance.yahoo.com/quote/{x["symbol"]}" target="_blank">[link]</a>',
@@ -259,6 +256,9 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
             return ""
 
     df["google_link"] = df.apply(lambda row: _make_google_link(row), axis=1)
+
+    # Remove columns
+    df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()
 
     return df, eur_currencies_prices
 

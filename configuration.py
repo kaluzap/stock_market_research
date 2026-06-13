@@ -14,10 +14,8 @@ FILE_REQUEST_TIME = "request_time.txt"
 FILE_REPORT_TEMPLATE = "report_template.html"
 
 WANTED_COLUMNS = [
-    "symbol",
     "my_name",
     "isin",
-    "gsymbol",
     "shortName",
     "regularMarketPrice",
     "targetMeanPrice",
@@ -26,6 +24,8 @@ WANTED_COLUMNS = [
     "dividendYield",
     "exDividendDate",
     "classification",
+    "yahoo_link",
+    "google_link",
 ]
 
 COLUMNS_NEED_CURRENCY_CONVERTION = [
