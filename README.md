@@ -10,6 +10,8 @@ This tool provides an automated research report on stock market data using `yfin
 - **Testing Suite:** Robust unit testing using `pytest` and `mocker` to ensure data integrity.
 - **Logging:** Professional logging system for monitoring the data pipeline execution.
 
+![Web Dashboard Screenshot](image/web_version.png)
+
 ## Installation
 
 1. Create and activate a virtual environment:
