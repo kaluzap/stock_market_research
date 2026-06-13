@@ -1,5 +1,10 @@
 import argparse
+import logging
 from pathlib import Path
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 import configuration as cfg
 from utils import stock_data
@@ -35,7 +40,7 @@ def actualize_stock_data(data_path_dir: Path):
 
     # Add always EUR to transform USD to EUR.
     list_of_stocks = list(set(df["ysymbol"])) + cfg.CURRENCIES
-    print(f"Downloading data for: {list_of_stocks}")
+    logger.info(f"Downloading data for: {list_of_stocks}")
 
     save_request_time()
     stock_data.actualize_stock_data(
@@ -195,7 +200,7 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     # Transform currencies to EUR
     df = df[df["currency"].map(lambda x: isinstance(x, str))].copy()
     # df["currency"] = df["currency"].map(lambda x: x.upper())
-    print(df["currency"].value_counts())
+    logger.info(f"Currency counts:\n{df['currency'].value_counts()}")
     eur_currencies_prices = dict()
     for currency_symbol in cfg.CURRENCIES:
         try:
@@ -216,7 +221,7 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     if "GBP" in eur_currencies_prices:
         eur_currencies_prices["GBp"] = eur_currencies_prices["GBP"] * 100.0
     
-    print("Detected Exchange Rates:", eur_currencies_prices)
+    logger.info(f"Detected Exchange Rates: {eur_currencies_prices}")
 
     def _make_currency_transformation(row: pd.Series, col):
         if row["currency"] == "EUR":
@@ -284,7 +289,7 @@ def filter_stocks_df(
     try:
         df = df.sort_values(by=[sort_by])
     except KeyError:
-        print(f"ERROR: unknown column '{sort_by}'.")
+        logger.error(f"unknown column '{sort_by}'.")
 
     # Filtering if column and value
     try:
@@ -296,7 +301,7 @@ def filter_stocks_df(
         try:
             df = df[df[col].astype(str) == value].copy()
         except KeyError:
-            print(f"ERROR: unknown column '{col}'.")
+            logger.error(f"unknown column '{col}'.")
     df = df.reset_index(drop=True)
 
     return df
