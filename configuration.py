@@ -2,7 +2,15 @@ from pathlib import Path
 
 # Directories
 BASE_DIR = (Path(__file__).parent).resolve()
-DATA_DIR = BASE_DIR / "data"
+_PRIVATE_DATA_DIR = BASE_DIR / "my_data"
+_PUBLIC_DATA_DIR = BASE_DIR / "data"
+
+# Prioritize private data if it exists and contains the stock list
+if (_PRIVATE_DATA_DIR / "list_of_stocks.csv").exists():
+    DATA_DIR = _PRIVATE_DATA_DIR
+else:
+    DATA_DIR = _PUBLIC_DATA_DIR
+
 REPORT_DIR = BASE_DIR / "reports"
 TEMP_DIR = BASE_DIR / "temp"
 TEMPLATES_DIR = BASE_DIR / "templates"

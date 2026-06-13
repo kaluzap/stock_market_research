@@ -27,7 +27,7 @@ def actualize():
     try:
         # Construct the command to run create_report.py
         script_path = Path(cfg.BASE_DIR) / "create_report.py"
-        data_dir = Path(cfg.BASE_DIR) / "my_data"
+        data_dir = cfg.DATA_DIR
 
         python_cmd = "python3" if os.name != "nt" else "python"
 
@@ -64,7 +64,7 @@ def filter_report():
 
     try:
         script_path = Path(cfg.BASE_DIR) / "create_report.py"
-        data_dir = Path(cfg.BASE_DIR) / "my_data"
+        data_dir = cfg.DATA_DIR
 
         python_cmd = "python3" if os.name != "nt" else "python"
 
@@ -111,7 +111,7 @@ def refresh_report():
 
     try:
         script_path = Path(cfg.BASE_DIR) / "create_report.py"
-        data_dir = Path(cfg.BASE_DIR) / "my_data"
+        data_dir = cfg.DATA_DIR
 
         python_cmd = "python3" if os.name != "nt" else "python"
 
@@ -141,4 +141,4 @@ if __name__ == "__main__":
     print(f"\n--- Stock Market Research Server ---")
     print(f"Report available at: http://localhost:5000")
     print(f"Press Ctrl+C to stop the server.\n")
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
