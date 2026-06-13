@@ -1,9 +1,9 @@
 import argparse
+from pathlib import Path
 
 import configuration as cfg
 from utils import stock_data
 
-from pathlib import Path
 import pandas as pd
 from datetime import datetime
 import math

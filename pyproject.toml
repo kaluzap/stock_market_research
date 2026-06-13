@@ -21,8 +21,8 @@ dependencies = [
 ]
 
 [tool.setuptools]
-py-modules = ["configuration", "create_report", "find_yahoo_id", "server"]
+py-modules = ["configuration", "find_yahoo_id", "server"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["utils*"]
+include = ["utils*", "data_pipeline*"]

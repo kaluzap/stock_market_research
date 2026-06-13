@@ -26,7 +26,7 @@ def actualize():
 
     try:
         # Construct the command to run create_report.py
-        script_path = Path(cfg.BASE_DIR) / "create_report.py"
+        script_path = Path(cfg.BASE_DIR) / "data_pipeline" / "create_report.py"
         data_dir = cfg.DATA_DIR
 
         python_cmd = "python3" if os.name != "nt" else "python"
@@ -63,7 +63,7 @@ def filter_report():
         return response
 
     try:
-        script_path = Path(cfg.BASE_DIR) / "create_report.py"
+        script_path = Path(cfg.BASE_DIR) / "data_pipeline" / "create_report.py"
         data_dir = cfg.DATA_DIR
 
         python_cmd = "python3" if os.name != "nt" else "python"
@@ -110,7 +110,7 @@ def refresh_report():
         return response
 
     try:
-        script_path = Path(cfg.BASE_DIR) / "create_report.py"
+        script_path = Path(cfg.BASE_DIR) / "data_pipeline" / "create_report.py"
         data_dir = cfg.DATA_DIR
 
         python_cmd = "python3" if os.name != "nt" else "python"
