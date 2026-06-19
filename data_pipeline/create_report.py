@@ -1,21 +1,23 @@
 import argparse
 import logging
 from pathlib import Path
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
-import configuration as cfg
-from utils import stock_data
-
 import pandas as pd
 from datetime import datetime
 import math
 
+import configuration as cfg
+from utils import stock_data, util
 
 data_file_path = cfg.TEMP_DIR / cfg.FILE_STOCK_DATA
 PATH_FILE_STOCKS_PRICES = Path("/tmp/stocks_prices.csv")
+
+# Configure logging
+logging.getLogger("yfinance").setLevel(logging.CRITICAL)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 def save_request_time() -> datetime:
@@ -207,20 +209,26 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
             row = df[df["symbol"] == currency_symbol].iloc[0]
             # Try multiple keys to find a valid price
             price = None
-            for key in ["regularMarketPrice", "currentPrice", "ask", "bid", "previousClose"]:
+            for key in [
+                "regularMarketPrice",
+                "currentPrice",
+                "ask",
+                "bid",
+                "previousClose",
+            ]:
                 if key in row and pd.notnull(row[key]):
                     price = float(row[key])
                     break
-            
+
             if price is not None:
                 eur_currencies_prices[row["currency"]] = price
         except IndexError:
             continue
-    
+
     # Adding GBp (Pence) to GBP transformation
     if "GBP" in eur_currencies_prices:
         eur_currencies_prices["GBp"] = eur_currencies_prices["GBP"] * 100.0
-    
+
     logger.info(f"Detected Exchange Rates: {eur_currencies_prices}")
 
     def _make_currency_transformation(row: pd.Series, col):
@@ -237,23 +245,9 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
             lambda r: round(_make_currency_transformation(r, col), 2), axis=1
         )
 
-    if "exDividendDate" in df.columns:
-
-        def _create_date(row: str) -> str:
-            if math.isnan(row["exDividendDate"]):
-                return "---"
-            stock_date = datetime.fromtimestamp(float(row["exDividendDate"]))
-
-            delta_days = "(?)"
-            if not math.isnan(row["lastDividendDate"]):
-                last_date = datetime.fromtimestamp(float(row["lastDividendDate"]))
-                delta_days = f"({(stock_date - last_date).days})"
-
-            if datetime.now() > stock_date:
-                return f'old {stock_date.strftime("%Y-%m-%d")} {delta_days}'
-            return f'{stock_date.strftime("%Y-%m-%d")} {delta_days}'
-
-        df["exDividendDate"] = df.apply(lambda row: _create_date(row), axis=1)
+    df["exDividendDate"] = df.apply(
+        lambda row: util.create_ex_dividend_date(row), axis=1
+    )
 
     # yahoo link
     df["yahoo_link"] = df.apply(
