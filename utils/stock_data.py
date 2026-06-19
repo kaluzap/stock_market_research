@@ -10,8 +10,23 @@ def download_stock_data(stocks: list[str]) -> dict:
     for stock in stocks:
         try:
             stock_data = tickers.tickers[stock].info
+            # dividend history is in a different place
+            dividend_history = tickers.tickers[stock].dividends
+            if not dividend_history.empty:
+                try:
+                    ex_date_1 = int(dividend_history.index[-1].timestamp())
+                    ex_value_1 = dividend_history.iloc[-1]
+                    stock_data["ex_date_1"] = ex_date_1
+                    stock_data["ex_value_1"] = ex_value_1
+                    ex_date_2 = int(dividend_history.index[-2].timestamp())
+                    ex_value_2 = dividend_history.iloc[-2]
+                    stock_data["ex_date_2"] = ex_date_2
+                    stock_data["ex_value_2"] = ex_value_2
+                except Exception as e:
+                    print(f"Error dividend_history for '{stock}': '{e}'")
+                    pass
         except KeyError as e:
-            print(f"Error with stock: '{e}'.")
+            print(f"Error with stock_data for '{stock}': '{e}'")
             continue
         data[stock] = stock_data
     return data
