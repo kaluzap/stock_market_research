@@ -76,3 +76,58 @@ def create_ex_dividend_date(row: pd.Series) -> str:
     if datetime.now().date() > day_last:
         return f'old {day_last.strftime("%Y-%m-%d")} {delta_days}'
     return f'{day_last.strftime("%Y-%m-%d")} {delta_days}'
+
+
+def my_classification(row: pd.Series) -> str:
+    """
+    Classifies a stock based on its gross margins, dividend yield, and price change.
+
+    The classification consists of a letter code followed by an optional sign suffix.
+
+    Letter Codes:
+        - 'A': No earnings data available (grossMargins is NaN).
+        - 'B': No or negative earnings (grossMargins <= 0).
+        - 'C': Has earnings, but no dividend data (grossMargins > 0 and dividendYield is NaN).
+        - 'D': Has earnings and pays dividends (grossMargins > 0 and dividendYield > 0).
+        - 'X': Unexpected/invalid state (grossMargins > 0 and dividendYield <= 0).
+
+    Sign Suffixes:
+        - '?': No price change data available (change is NaN).
+        - '-': Price is expected to go down (change < 0).
+        - '+': Price is expected to go up (change > 0).
+        - (no suffix): Price is expected to remain unchanged (change == 0).
+
+    Args:
+        row (pd.Series): A series containing stock metrics with at least the following keys:
+            - 'grossMargins' (float): The gross margins of the stock.
+            - 'dividendYield' (float): The dividend yield of the stock.
+            - 'change' (float): The price change ratio/percentage.
+
+    Returns:
+        str: The classification code (e.g., 'A?', 'D+', 'C-', 'B').
+    """
+    classification = ""
+    grossMargins = row["grossMargins"]
+    if math.isnan(grossMargins):
+        classification = "A"
+    elif grossMargins <= 0:
+        classification = "B"
+    else:
+        dividendYield = row["dividendYield"]
+        if math.isnan(dividendYield):
+            classification = "C"
+        elif dividendYield > 0:
+            classification = "D"
+        else:
+            # this cannot be true
+            classification = "X"
+    change = row["change"]
+    if math.isnan(change):
+        return classification + "?"
+    else:
+        if change < 0:
+            return classification + "-"
+        elif change == 0:
+            return classification
+        else:
+            return classification + "+"

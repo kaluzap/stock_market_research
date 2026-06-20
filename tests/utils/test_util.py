@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import math
-from utils.util import create_ex_dividend_date
+from utils.util import create_ex_dividend_date, my_classification
 
 def test_create_ex_dividend_date_standard():
     # Regular case: history and info are aligned
@@ -53,3 +53,46 @@ def test_create_ex_dividend_date_missing():
     })
     res = create_ex_dividend_date(row)
     assert res == "---"
+
+
+@pytest.mark.parametrize(
+    "gross_margins, dividend_yield, change, expected",
+    [
+        # Letter A: No earnings data (grossMargins is NaN)
+        (float("nan"), 0.05, 0.02, "A+"),
+        (float("nan"), 0.05, -0.01, "A-"),
+        (float("nan"), 0.05, 0.0, "A"),
+        (float("nan"), 0.05, float("nan"), "A?"),
+        
+        # Letter B: No/negative earnings (grossMargins <= 0)
+        (0.0, 0.05, 0.02, "B+"),
+        (-0.1, 0.05, -0.01, "B-"),
+        (-0.5, 0.05, 0.0, "B"),
+        (-0.01, 0.05, float("nan"), "B?"),
+        
+        # Letter C: Has earnings, no dividends (grossMargins > 0, dividendYield is NaN)
+        (0.2, float("nan"), 0.02, "C+"),
+        (0.5, float("nan"), -0.01, "C-"),
+        (0.01, float("nan"), 0.0, "C"),
+        (0.3, float("nan"), float("nan"), "C?"),
+        
+        # Letter D: Has earnings and dividends (grossMargins > 0, dividendYield > 0)
+        (0.2, 0.03, 0.02, "D+"),
+        (0.5, 0.01, -0.01, "D-"),
+        (0.01, 0.05, 0.0, "D"),
+        (0.3, 0.02, float("nan"), "D?"),
+        
+        # Letter X: Unexpected state (grossMargins > 0, dividendYield <= 0)
+        (0.2, 0.0, 0.02, "X+"),
+        (0.5, -0.01, -0.01, "X-"),
+        (0.01, -0.05, 0.0, "X"),
+        (0.3, 0.0, float("nan"), "X?"),
+    ],
+)
+def test_my_classification(gross_margins, dividend_yield, change, expected):
+    row = pd.Series({
+        "grossMargins": gross_margins,
+        "dividendYield": dividend_yield,
+        "change": change
+    })
+    assert my_classification(row) == expected
