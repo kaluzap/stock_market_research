@@ -191,18 +191,9 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
 
     logger.info(f"Detected Exchange Rates: {eur_currencies_prices}")
 
-    def _make_currency_transformation(row: pd.Series, col):
-        if row["currency"] == "EUR":
-            return row[col]
-        elif row["currency"] in eur_currencies_prices:
-            return row[col] / eur_currencies_prices[row["currency"]]
-        else:
-            # Only to note the missing currency in the reoport
-            return -row[col]
-
     for col in cfg.COLUMNS_NEED_CURRENCY_CONVERTION:
         df[col] = df.apply(
-            lambda r: round(_make_currency_transformation(r, col), 2), axis=1
+            lambda r: round(util.make_currency_transformation(r, col), 2), axis=1
         )
 
     df["exDividendDate"] = df.apply(
@@ -216,16 +207,7 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     )
 
     # google link
-    def _make_google_link(row: pd.Series) -> str:
-        try:
-            if row["gsymbol"] == "nan":
-                return ""
-            text = f'<a href="https://www.google.com/finance/quote/{row["gsymbol"]}" target="_blank">[link]</a>'
-            return text
-        except KeyError:
-            return ""
-
-    df["google_link"] = df.apply(lambda row: _make_google_link(row), axis=1)
+    df["google_link"] = df.apply(lambda row: util.make_google_link(row), axis=1)
 
     # Remove columns
     df = df[~df["symbol"].isin(cfg.CURRENCIES)][cfg.WANTED_COLUMNS].copy()

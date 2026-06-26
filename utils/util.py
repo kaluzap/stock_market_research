@@ -131,3 +131,25 @@ def my_classification(row: pd.Series) -> str:
             return classification
         else:
             return classification + "+"
+
+
+def make_currency_transformation(row: pd.Series, col: str)->float:
+    """Convert all values ​​to EUR."""
+    if row["currency"] == "EUR":
+        return row[col]
+    elif row["currency"] in eur_currencies_prices:
+        return row[col] / eur_currencies_prices[row["currency"]]
+    else:
+        # Only to note the missing currency in the reoport
+        return -row[col]
+
+
+def make_google_link(row: pd.Series) -> str:
+    """Create the google link."""
+    try:
+        if row["gsymbol"] == "nan":
+            return ""
+        text = f'<a href="https://www.google.com/finance/quote/{row["gsymbol"]}" target="_blank">[link]</a>'
+        return text
+    except KeyError:
+        return ""
