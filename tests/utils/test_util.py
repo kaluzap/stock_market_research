@@ -1,7 +1,11 @@
 import pytest
 import pandas as pd
-import math
-from utils.util import create_ex_dividend_date, my_classification
+from utils.util import (
+    create_ex_dividend_date,
+    my_classification,
+    make_currency_transformation,
+    make_google_link,
+)
 
 def test_create_ex_dividend_date_standard():
     # Regular case: history and info are aligned
@@ -96,3 +100,37 @@ def test_my_classification(gross_margins, dividend_yield, change, expected):
         "change": change
     })
     assert my_classification(row) == expected
+
+
+def test_make_currency_transformation():
+    # Case 1: EUR currency, value should remain the same
+    row_eur = pd.Series({"currency": "EUR", "price": 100.0})
+    rates = {"USD": 1.1, "GBP": 0.85}
+    assert make_currency_transformation(row_eur, "price", rates) == 100.0
+
+    # Case 2: USD currency, converted to EUR using rates (price / rate)
+    row_usd = pd.Series({"currency": "USD", "price": 110.0})
+    assert make_currency_transformation(row_usd, "price", rates) == pytest.approx(100.0)
+
+    # Case 3: GBP currency, converted to EUR
+    row_gbp = pd.Series({"currency": "GBP", "price": 85.0})
+    assert make_currency_transformation(row_gbp, "price", rates) == pytest.approx(100.0)
+
+    # Case 4: Missing/unsupported currency, returns negated price
+    row_jpy = pd.Series({"currency": "JPY", "price": 120.0})
+    assert make_currency_transformation(row_jpy, "price", rates) == -120.0
+
+
+def test_make_google_link():
+    # Case 1: Valid gsymbol
+    row_valid = pd.Series({"gsymbol": "NASDAQ:AAPL"})
+    expected_link = '<a href="https://www.google.com/finance/quote/NASDAQ:AAPL" target="_blank">[link]</a>'
+    assert make_google_link(row_valid) == expected_link
+
+    # Case 2: gsymbol is "nan"
+    row_nan = pd.Series({"gsymbol": "nan"})
+    assert make_google_link(row_nan) == ""
+
+    # Case 3: Missing gsymbol key (KeyError)
+    row_missing = pd.Series({})
+    assert make_google_link(row_missing) == ""

@@ -133,8 +133,25 @@ def my_classification(row: pd.Series) -> str:
             return classification + "+"
 
 
-def make_currency_transformation(row: pd.Series, col: str, eur_currencies_prices: list[float])->float:
-    """Convert all values ​​to EUR."""
+def make_currency_transformation(row: pd.Series, col: str, eur_currencies_prices: dict[str, float]) -> float:
+    """
+    Transforms a monetary value in a given column to Euros (EUR).
+
+    If the stock's currency is EUR, the value is returned unchanged.
+    If the currency exists in the exchange rate dictionary, the value is divided by the rate.
+    Otherwise, the value is negated to flag the unsupported currency in the report.
+
+    Args:
+        row (pd.Series): A row representing stock data, containing keys:
+            - 'currency' (str): The currency of the stock (e.g., 'EUR', 'USD').
+            - col (str): The column containing the value to convert.
+        col (str): The name of the column in `row` containing the monetary value.
+        eur_currencies_prices (dict[str, float]): A dictionary mapping currency symbols
+            (e.g., 'USD') to their respective exchange rate relative to EUR.
+
+    Returns:
+        float: The converted value in EUR, or the negated value if currency conversion is missing.
+    """
     if row["currency"] == "EUR":
         return row[col]
     elif row["currency"] in eur_currencies_prices:
@@ -145,7 +162,16 @@ def make_currency_transformation(row: pd.Series, col: str, eur_currencies_prices
 
 
 def make_google_link(row: pd.Series) -> str:
-    """Create the google link."""
+    """
+    Generates an HTML anchor link to the stock's Google Finance page.
+
+    Args:
+        row (pd.Series): A row representing stock data, containing keys:
+            - 'gsymbol' (str): The Google Finance quote symbol (e.g., 'NASDAQ:AAPL').
+
+    Returns:
+        str: An HTML link string if a valid gsymbol is found, or an empty string.
+    """
     try:
         if row["gsymbol"] == "nan":
             return ""
