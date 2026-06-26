@@ -133,7 +133,7 @@ def my_classification(row: pd.Series) -> str:
             return classification + "+"
 
 
-def make_currency_transformation(row: pd.Series, col: str)->float:
+def make_currency_transformation(row: pd.Series, col: str, eur_currencies_prices: list[float])->float:
     """Convert all values ​​to EUR."""
     if row["currency"] == "EUR":
         return row[col]

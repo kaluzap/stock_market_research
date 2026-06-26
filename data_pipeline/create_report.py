@@ -193,7 +193,7 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
 
     for col in cfg.COLUMNS_NEED_CURRENCY_CONVERTION:
         df[col] = df.apply(
-            lambda r: round(util.make_currency_transformation(r, col), 2), axis=1
+            lambda r: round(util.make_currency_transformation(r, col, eur_currencies_prices), 2), axis=1
         )
 
     df["exDividendDate"] = df.apply(
