@@ -2,10 +2,12 @@ import yfinance as yf
 import pandas as pd
 from pathlib import Path
 import json
+from curl_cffi import requests
 
 
 def download_stock_data(stocks: list[str]) -> dict:
-    tickers = yf.Tickers(" ".join(stocks))
+    session = requests.Session(impersonate="chrome")
+    tickers = yf.Tickers(" ".join(stocks), session=session)
     data = dict()
     for stock in stocks:
         try:
@@ -47,6 +49,3 @@ def load_stock_data(data_file_path: Path) -> pd.DataFrame:
         data = json.load(input_file)
     df = pd.DataFrame([x for x in data.values()])
     return df
-
-
-
