@@ -119,7 +119,7 @@
             status.style.color = 'inherit';
 
             try {
-                const response = await fetch('http://localhost:5000/actualize', { method: 'POST' });
+                const response = await fetch('/actualize', { method: 'POST' });
                 if (response.ok) {
                     status.innerText = 'Success! Reloading...';
                     status.style.color = '#27ae60';
@@ -149,7 +149,7 @@
             status.style.color = 'inherit';
 
             try {
-                const response = await fetch('http://localhost:5000/refresh', { method: 'POST' });
+                const response = await fetch('/refresh', { method: 'POST' });
                 if (response.ok) {
                     status.innerText = 'Success! Reloading...';
                     status.style.color = '#27ae60';
@@ -179,7 +179,7 @@
             status.style.color = 'inherit';
 
             try {
-                const response = await fetch('http://localhost:5000/filter', { method: 'POST' });
+                const response = await fetch('/filter', { method: 'POST' });
                 if (response.ok) {
                     status.innerText = 'Success! Reloading...';
                     status.style.color = '#27ae60';
