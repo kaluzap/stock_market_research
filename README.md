@@ -6,7 +6,7 @@ This tool provides an automated research report on stock market data using `yfin
 
 - **Automated Data Pipeline:** Downloads and processes stock data, handles currency conversion (to EUR), and generates custom classifications.
 - **Privacy First:** Supports a dual-data structure. Prioritizes `my_data/` for personal use while falling back to `data/` for public samples.
-- **Interactive Dashboard:** Flask-based web interface with client-side sorting and one-click data actualization.
+- **Interactive Dashboard:** Web interface with client-side sorting and one-click data actualization. Available as a **Flask** server (`web_gui/`) or a **FastAPI** server (`web_gui_fa/`).
 - **Testing Suite:** Robust unit testing using `pytest` and `mocker` to ensure data integrity.
 - **Logging:** Professional logging system for monitoring the data pipeline execution.
 
@@ -29,11 +29,21 @@ This tool provides an automated research report on stock market data using `yfin
 
 ### 1. Web Dashboard (Recommended)
 
-To run the web server:
+Two server implementations are available, both running on `http://localhost:5000`.
+
+#### Flask server (original)
 
 ```bash
 python web_gui/server.py
 ```
+
+#### FastAPI server
+
+```bash
+python web_gui_fa/server.py
+```
+
+The FastAPI server also exposes interactive API docs at `http://localhost:5000/docs`.
 
 - **View Report:** Open `http://localhost:5000` in your browser.
 - **Actions:** Use the buttons in the header to **Actualize Data**, **Refresh** the report, or **Filter** for high-quality (D+) stocks.
@@ -62,6 +72,7 @@ pytest tests/
 
 - `data_pipeline/`: Core logic for data processing and report generation.
 - `web_gui/`: Flask web application and dashboard server.
+- `web_gui_fa/`: FastAPI web application and dashboard server.
 - `configuration.py`: Centralized management of paths, currencies, and report columns.
 - `utils/`: Reusable utilities for stock data retrieval.
 - `data/`: Sample stock lists for demonstration.
