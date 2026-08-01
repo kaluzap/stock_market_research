@@ -10,3 +10,4 @@ stock_market_research.egg-info/requires.txt
 stock_market_research.egg-info/top_level.txt
 utils/find_yahoo_id.py
 utils/stock_data.py
+utils/util.py

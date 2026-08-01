@@ -139,6 +139,6 @@ def refresh_report():
 
 if __name__ == "__main__":
     print(f"\n--- Stock Market Research Server ---")
-    print(f"Report available at: http://localhost:5000")
+    print(f"Report available at: http://localhost:{cfg.FLASK_PORT}")
     print(f"Press Ctrl+C to stop the server.\n")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=cfg.FLASK_PORT, debug=True)

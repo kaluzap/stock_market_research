@@ -15,6 +15,10 @@ REPORT_DIR = BASE_DIR / "reports"
 TEMP_DIR = BASE_DIR / "temp"
 TEMPLATES_DIR = BASE_DIR / "templates"
 
+# Server
+FLASK_PORT = 5000
+FASTAPI_PORT = 5000
+
 # Files
 FILE_STOCK_DATA = "stock_data.json"
 FILE_STOCK_LIST = "list_of_stocks.csv"
