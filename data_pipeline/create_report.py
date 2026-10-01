@@ -41,7 +41,8 @@ def actualize_stock_data(data_path_dir: Path):
     df = pd.read_csv(file_with_stocks_list)
 
     # Add always EUR to transform USD to EUR.
-    list_of_stocks = list(set(df["ysymbol"])) + cfg.CURRENCIES
+    # Rows without ticker only relate a name to an ISIN
+    list_of_stocks = list(set(df["ysymbol"].dropna())) + cfg.CURRENCIES
     logger.info(f"Downloading data for: {list_of_stocks}")
 
     save_request_time()
@@ -145,12 +146,13 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
         if isinstance(isin, str) and isin.lower() != "none" and not util.is_valid_isin(isin):
             logger.warning(f"Invalid ISIN '{isin}' for '{row['name']}'")
 
-    symbol_name = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["name"]))
-    symbol_isin = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["isin"]))
-    symbol_gsymbol = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["gsymbol"]))
-    df["my_name"] = df["symbol"].map(lambda x: symbol_name.get(x, None))
-    df["isin"] = df["symbol"].map(lambda x: symbol_isin.get(x, None))
-    df["gsymbol"] = df["symbol"].map(lambda x: symbol_gsymbol.get(x, None))
+    # One output row per list row: several rows can share a ticker (e.g. an old
+    # and a new ISIN of the same asset), so merge instead of mapping by ticker
+    df_symbol_name = df_symbol_name[["ysymbol", "name", "isin", "gsymbol"]].rename(
+        columns={"ysymbol": "symbol", "name": "my_name"}
+    )
+    df = df.drop(columns=["my_name", "isin", "gsymbol"], errors="ignore")
+    df = df.merge(df_symbol_name, on="symbol", how="left")
 
     # Add possible percentage change
     df["change"] = df.apply(
