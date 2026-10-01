@@ -5,6 +5,7 @@ from utils.util import (
     my_classification,
     make_currency_transformation,
     make_google_link,
+    is_valid_isin,
 )
 
 def test_create_ex_dividend_date_standard():
@@ -137,3 +138,21 @@ def test_make_google_link():
     # Case 3: Missing gsymbol key (KeyError)
     row_missing = pd.Series({})
     assert make_google_link(row_missing) == ""
+
+
+@pytest.mark.parametrize(
+    "isin, expected",
+    [
+        ("DE000A1EWWW0", True),   # adidas
+        ("US0231351067", True),   # amazon
+        ("DE000A0D9PT0", True),   # MTU
+        ("DE000A0D9PTO", False),  # MTU with letter 'O' instead of digit '0'
+        ("US0231351068", False),  # wrong check digit
+        ("US023135106", False),   # too short
+        ("de000a1ewww0", False),  # lowercase
+        ("none", False),
+        (float("nan"), False),
+    ],
+)
+def test_is_valid_isin(isin, expected):
+    assert is_valid_isin(isin) == expected

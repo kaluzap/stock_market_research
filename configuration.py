@@ -53,7 +53,8 @@ CURRENCIES = [
     "EURCHF=X",
     "EURJPY=X",
     "EURBRL=X",
-    "EURCHF=X",
+    "EURCAD=X",
+    "EURKRW=X",
 ]
 
 if __name__ == "__main__":
