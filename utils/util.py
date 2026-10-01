@@ -80,16 +80,17 @@ def create_ex_dividend_date(row: pd.Series) -> str:
 
 def my_classification(row: pd.Series) -> str:
     """
-    Classifies a stock based on its gross margins, dividend yield, and price change.
+    Classifies a stock based on its profit margins, dividend yield, and price change.
 
     The classification consists of a letter code followed by an optional sign suffix.
 
     Letter Codes:
-        - 'A': No earnings data available (grossMargins is NaN).
-        - 'B': No or negative earnings (grossMargins <= 0).
-        - 'C': Has earnings, but no dividend data (grossMargins > 0 and dividendYield is NaN).
-        - 'D': Has earnings and pays dividends (grossMargins > 0 and dividendYield > 0).
-        - 'X': Unexpected/invalid state (grossMargins > 0 and dividendYield <= 0).
+        - 'A': No earnings data available (profitMargins is NaN or exactly 0.0,
+               which Yahoo returns as a placeholder for missing data).
+        - 'B': Negative earnings (profitMargins < 0).
+        - 'C': Has earnings, but no dividend data (profitMargins > 0 and dividendYield is NaN).
+        - 'D': Has earnings and pays dividends (profitMargins > 0 and dividendYield > 0).
+        - 'X': Unexpected/invalid state (profitMargins > 0 and dividendYield <= 0).
 
     Sign Suffixes:
         - '?': No price change data available (change is NaN).
@@ -99,7 +100,7 @@ def my_classification(row: pd.Series) -> str:
 
     Args:
         row (pd.Series): A series containing stock metrics with at least the following keys:
-            - 'grossMargins' (float): The gross margins of the stock.
+            - 'profitMargins' (float): The net profit margins of the stock.
             - 'dividendYield' (float): The dividend yield of the stock.
             - 'change' (float): The price change ratio/percentage.
 
@@ -107,10 +108,10 @@ def my_classification(row: pd.Series) -> str:
         str: The classification code (e.g., 'A?', 'D+', 'C-', 'B').
     """
     classification = ""
-    grossMargins = row["grossMargins"]
-    if math.isnan(grossMargins):
+    profitMargins = row["profitMargins"]
+    if math.isnan(profitMargins) or profitMargins == 0:
         classification = "A"
-    elif grossMargins <= 0:
+    elif profitMargins < 0:
         classification = "B"
     else:
         dividendYield = row["dividendYield"]
