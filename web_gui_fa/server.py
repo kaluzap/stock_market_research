@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pathlib import Path
 import configuration as cfg
+from utils.notify import desktop_notification
 
 app = FastAPI(title="Stock Market Research", version="1.0.0")
 
@@ -39,8 +40,10 @@ def actualize():
         )
 
         if result.returncode == 0:
+            desktop_notification("Stock Market Research", "Data actualized. The report has been updated.")
             return {"status": "success", "message": "Report updated."}
         else:
+            desktop_notification("Stock Market Research", "Data actualization failed.")
             return JSONResponse(
                 status_code=500,
                 content={"status": "error", "error": result.stderr},
