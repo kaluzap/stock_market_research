@@ -3,6 +3,7 @@ import os
 import flask
 from flask import Flask, send_from_directory, jsonify
 import configuration as cfg
+from utils.notify import desktop_notification
 from pathlib import Path
 
 app = Flask(__name__, static_folder=None)
@@ -38,10 +39,12 @@ def actualize():
         )
 
         if result.returncode == 0:
+            desktop_notification("Stock Market Research", "Data actualized. The report has been updated.")
             res = jsonify({"status": "success", "message": "Report updated."})
             res.headers.add("Access-Control-Allow-Origin", "*")
             return res, 200
         else:
+            desktop_notification("Stock Market Research", "Data actualization failed.")
             res = jsonify({"status": "error", "error": result.stderr})
             res.headers.add("Access-Control-Allow-Origin", "*")
             return res, 500

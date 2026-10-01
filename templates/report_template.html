@@ -62,6 +62,18 @@
         [class*="classification-A"] { border-left: 5px solid #7f8c8d !important; }
         tr:hover { background-color: #cbd5e1 !important; outline: 1px solid var(--primary) !important; }
         a { text-decoration: none; font-weight: bold; }
+        .toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            background: #27ae60;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: opacity 0.5s;
+        }
     </style>
 </head>
 <body>
@@ -109,10 +121,28 @@
     <script>
         new Tablesort(document.querySelector('table'));
 
+        // The desktop notification is sent by the server (notify-send);
+        // after a successful actualization the reloaded page shows a toast.
+        try {
+            if (sessionStorage.getItem('notifyActualized')) {
+                sessionStorage.removeItem('notifyActualized');
+                showToast('Data actualized. The report has been updated.');
+            }
+        } catch (e) {}
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; }, 5000);
+            setTimeout(() => toast.remove(), 5500);
+        }
+
         async function actualizeData() {
             const btn = document.getElementById('actualize-btn');
             const status = document.getElementById('actualize-status');
-            
+
             btn.setAttribute('aria-busy', 'true');
             btn.disabled = true;
             status.innerText = 'Actualizing...';
@@ -121,6 +151,7 @@
             try {
                 const response = await fetch('/actualize', { method: 'POST' });
                 if (response.ok) {
+                    try { sessionStorage.setItem('notifyActualized', '1'); } catch (e) {}
                     status.innerText = 'Success! Reloading...';
                     status.style.color = '#27ae60';
                     setTimeout(() => window.location.reload(), 1500);
