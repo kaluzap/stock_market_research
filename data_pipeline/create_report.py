@@ -138,6 +138,13 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     # Add my names and isin as columns
     file_with_stocks_list = data_path_dir / cfg.FILE_STOCK_LIST
     df_symbol_name = pd.read_csv(file_with_stocks_list)
+
+    # Warn about mistyped ISINs (e.g. letter 'O' instead of digit '0'). Crypto has no ISIN.
+    for _, row in df_symbol_name.iterrows():
+        isin = row["isin"]
+        if isinstance(isin, str) and isin.lower() != "none" and not util.is_valid_isin(isin):
+            logger.warning(f"Invalid ISIN '{isin}' for '{row['name']}'")
+
     symbol_name = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["name"]))
     symbol_isin = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["isin"]))
     symbol_gsymbol = dict(zip(df_symbol_name["ysymbol"], df_symbol_name["gsymbol"]))

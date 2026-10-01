@@ -1,33 +1,77 @@
+"""
+Finds the best Yahoo Finance ticker for an ISIN.
+
+For this report the best ticker is the one with the most data (fundamentals and
+analyst targets), not the one where the asset is bought. Prices are converted to
+EUR anyway, so the home listing (e.g. VOD.L) is better than a German secondary
+listing (e.g. VODI.DE), which often lacks this data.
+
+Usage:
+    python utils/find_yahoo_id.py DE000A1EWWW0 GB00BH4HKS39 ...
+"""
+
+import sys
+
 import yfinance as yf
 
-def get_yahoo_ticker_from_isin(isin):
-    # Perform a search for the ISIN
-    search = yf.Search(isin)
+from utils.util import is_valid_isin
 
-    print(search.quotes)
+# Fields the report needs; a ticker scores one point for each one available
+WANTED_FIELDS = [
+    "profitMargins",
+    "dividendYield",
+    "payoutRatio",
+    "targetMeanPrice",
+    "numberOfAnalystOpinions",
+]
 
-    if not search.quotes:
+# On ties (e.g. ETFs, which have no fundamentals) prefer the German venues
+PREFERRED_SUFFIXES = [".DE", ".MU"]
+
+
+def score_ticker(info: dict) -> int:
+    # Yahoo returns 0 as a placeholder for missing data
+    return sum(info.get(field) not in (None, 0) for field in WANTED_FIELDS)
+
+
+def get_yahoo_ticker_from_isin(isin: str) -> str | None:
+    if not is_valid_isin(isin):
+        print(f"WARNING: '{isin}' is not a valid ISIN (check digit or format)")
+
+    symbols = [quote["symbol"] for quote in yf.Search(isin).quotes]
+    if not symbols:
         return None
 
-    # Priority 1: Gettex (Munich) - best for Scalable/N26
-    for quote in search.quotes:
-        if quote['symbol'].endswith('.MU'):
-            return "Gettex", quote['symbol']
+    candidates = []
+    for order, symbol in enumerate(symbols):
+        try:
+            info = yf.Ticker(symbol).info
+        except Exception:
+            continue
+        preferred = any(symbol.endswith(s) for s in PREFERRED_SUFFIXES)
+        candidates.append((score_ticker(info), preferred, -order, symbol, info))
+        print(
+            f"  {symbol:12} score={score_ticker(info)} "
+            f"currency={info.get('currency')} analysts={info.get('numberOfAnalystOpinions')}"
+        )
 
-    # Priority 2: Xetra - best general German data
-    for quote in search.quotes:
-        if quote['symbol'].endswith('.DE'):
-            return "Xetra", quote['symbol']
+    if not candidates:
+        return None
 
-    # Priority 3: Any European exchange (e.g., .PA for Paris, .MI for Milan)
-    # This ensures you stay in EUR
-    return "Other", search.quotes[0]['symbol']
+    _, _, _, best, info = max(candidates)
 
-# Example usage:
-isin_list = ['IE00BMC38736', 'IE00BGV5VN51', "IE00B3XXRP09"]
-for isin in isin_list:
-    ticker = get_yahoo_ticker_from_isin(isin)
-    print(f"ISIN: {isin} -> Ticker: {ticker}")
+    # Depositary receipts (ADR/GDR) have a US ISIN for a foreign company, and Yahoo
+    # only finds the receipt listings, not the home listing of the share
+    if isin.startswith("US") and info.get("country") not in (None, "United States"):
+        print(
+            f"WARNING: '{isin}' looks like a depositary receipt of a company from "
+            f"{info.get('country')}. Search the home listing manually."
+        )
 
-    ticker_yahoo = yf.Ticker(isin)
-    print(ticker_yahoo.ticker)
+    return best
+
+
+if __name__ == "__main__":
+    for isin in sys.argv[1:]:
+        print(f"ISIN: {isin}")
+        print(f"  -> {get_yahoo_ticker_from_isin(isin)}")

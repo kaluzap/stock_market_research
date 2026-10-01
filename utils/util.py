@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import math
+import re
 import logging
 
 logger = logging.getLogger(__name__)
@@ -180,3 +181,28 @@ def make_google_link(row: pd.Series) -> str:
         return text
     except KeyError:
         return ""
+
+
+def is_valid_isin(isin: str) -> bool:
+    """
+    Validates an ISIN using its format and check digit (Luhn algorithm).
+
+    Catches typos such as the letter 'O' instead of the digit '0'.
+
+    Args:
+        isin (str): The ISIN to validate (e.g., 'DE000A1EWWW0').
+
+    Returns:
+        bool: True if the ISIN has a valid format and check digit, False otherwise.
+    """
+    if not isinstance(isin, str) or not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{9}[0-9]", isin):
+        return False
+
+    # Letters become two digits (A=10 ... Z=35), digits stay the same
+    digits = "".join(str(int(c, 36)) for c in isin[:-1])
+
+    total = 0
+    for i, d in enumerate(reversed(digits)):
+        n = int(d) * (2 if i % 2 == 0 else 1)
+        total += n // 10 + n % 10
+    return (10 - total % 10) % 10 == int(isin[-1])
