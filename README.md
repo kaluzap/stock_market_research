@@ -32,7 +32,7 @@ pip install -e ".[dev]"
 
 ### First run
 
-The report is built from downloaded data, so download it once first (about a minute):
+The report is built from downloaded data, so download it once first (about 30 seconds for 150 tickers; 16 tickers are downloaded at a time):
 
 ```bash
 python data_pipeline/create_report.py -a

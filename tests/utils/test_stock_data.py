@@ -1,6 +1,7 @@
 import pytest
 import pandas as pd
 import json
+import threading
 from pathlib import Path
 from utils.stock_data import (
     download_stock_data,
@@ -97,3 +98,66 @@ def test_actualize_stock_data_keeps_old_file_when_nothing_downloaded(mocker, tmp
         actualize_stock_data(["AAPL"], file_path)
 
     assert json.loads(file_path.read_text()) == {"AAPL": {"price": 150}}
+
+
+def mock_tickers(mocker, tickers: dict):
+    tickers_obj = mocker.Mock()
+    tickers_obj.tickers = tickers
+    mocker.patch("yfinance.Tickers", return_value=tickers_obj)
+
+
+def test_download_stock_data_adds_last_two_dividends(mocker):
+    ticker = mocker.Mock()
+    ticker.info = {"symbol": "KO"}
+    ticker.dividends = pd.Series(
+        [0.48, 0.51, 0.51],
+        index=pd.to_datetime(["2025-06-13", "2025-09-15", "2025-12-01"], utc=True),
+    )
+    mock_tickers(mocker, {"KO": ticker})
+
+    data = download_stock_data(["KO"])["KO"]
+
+    assert data["ex_date_1"] == int(pd.Timestamp("2025-12-01", tz="UTC").timestamp())
+    assert data["ex_value_1"] == 0.51
+    assert data["ex_date_2"] == int(pd.Timestamp("2025-09-15", tz="UTC").timestamp())
+
+
+def test_download_stock_data_with_one_dividend(mocker):
+    ticker = mocker.Mock()
+    ticker.info = {"symbol": "NEW"}
+    ticker.dividends = pd.Series([1.0], index=pd.to_datetime(["2025-12-01"], utc=True))
+    mock_tickers(mocker, {"NEW": ticker})
+
+    data = download_stock_data(["NEW"])["NEW"]
+
+    assert data["ex_value_1"] == 1.0
+    assert "ex_date_2" not in data
+
+
+def test_download_stock_data_keeps_info_when_dividends_fail(mocker):
+    ticker = mocker.Mock()
+    ticker.info = {"symbol": "AAPL"}
+    type(ticker).dividends = mocker.PropertyMock(side_effect=Exception("timeout"))
+    mock_tickers(mocker, {"AAPL": ticker})
+
+    assert download_stock_data(["AAPL"]) == {"AAPL": {"symbol": "AAPL"}}
+
+
+def test_download_stock_data_runs_in_parallel(mocker):
+    # Both tickers wait for each other: this only finishes if they are
+    # downloaded at the same time (sequentially, the barrier times out)
+    barrier = threading.Barrier(2, timeout=5)
+
+    def info():
+        barrier.wait()
+        return {"ok": True}
+
+    tickers = {}
+    for symbol in ("A", "B"):
+        ticker = mocker.Mock()
+        type(ticker).info = mocker.PropertyMock(side_effect=info)
+        ticker.dividends = pd.Series(dtype=float)
+        tickers[symbol] = ticker
+    mock_tickers(mocker, tickers)
+
+    assert download_stock_data(["A", "B"]) == {"A": {"ok": True}, "B": {"ok": True}}
