@@ -9,7 +9,6 @@ import configuration as cfg
 from utils import stock_data, util
 
 data_file_path = cfg.TEMP_DIR / cfg.FILE_STOCK_DATA
-PATH_FILE_STOCKS_PRICES = Path("/tmp/stocks_prices.csv")
 
 # Configure logging
 logging.getLogger("yfinance").setLevel(logging.CRITICAL)
@@ -260,9 +259,6 @@ def main(data_path_dir: Path, sort_by: str, column_value: str, actualize: bool):
         actualize_stock_data(data_path_dir)
 
     df, eur_currencies_prices = create_stocks_df(data_path_dir)
-
-    # send a copy for other uses
-    df[["my_name", "isin", "regularMarketPrice"]].to_csv(PATH_FILE_STOCKS_PRICES)
 
     df = filter_stocks_df(df, sort_by, column_value)
 
