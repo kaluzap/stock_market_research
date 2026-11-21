@@ -1,13 +1,15 @@
 # Stock Market Research
 
+[![Python Tests](https://github.com/kaluzap/stock_market_research/actions/workflows/python-tests.yml/badge.svg)](https://github.com/kaluzap/stock_market_research/actions/workflows/python-tests.yml)
+
 This tool provides an automated research report on stock market data using `yfinance`. It is designed as a professional data pipeline with a web-based dashboard.
 
 ## Features
 
 - **Automated Data Pipeline:** Downloads and processes stock data, handles currency conversion (to EUR), and generates custom classifications.
 - **Privacy First:** Supports a dual-data structure. Prioritizes `my_data/` for personal use while falling back to `data/` for public samples.
-- **Interactive Dashboard:** Web interface with client-side sorting and one-click data actualization. Available as a **Flask** server (`web_gui/`) or a **FastAPI** server (`web_gui_fa/`).
-- **Testing Suite:** Robust unit testing using `pytest` and `mocker` to ensure data integrity.
+- **Interactive Dashboard:** Web interface with client-side sorting and one-click data actualization. Served by a **FastAPI** app (`web_gui/`) with interactive API docs.
+- **Testing Suite:** Unit tests with `pytest` and `pytest-mock` (Yahoo and subprocess calls are mocked), run by GitHub Actions on every push and pull request.
 - **Logging:** Professional logging system for monitoring the data pipeline execution.
 
 ![Web Dashboard Screenshot](image/web_version.png)
@@ -22,28 +24,18 @@ This tool provides an automated research report on stock market data using `yfin
 
 2. Install the project in editable mode:
    ```bash
-   pip install -e .
+   pip install -e ".[dev]"
    ```
 
 ## How to use
 
 ### 1. Web Dashboard (Recommended)
 
-Two server implementations are available, both running on `http://localhost:5000`.
-
-#### Flask server (original)
-
 ```bash
 python web_gui/server.py
 ```
 
-#### FastAPI server
-
-```bash
-python web_gui_fa/server.py
-```
-
-The FastAPI server also exposes interactive API docs at `http://localhost:5000/docs`.
+The server listens only on `127.0.0.1:5000` (not reachable from other machines) and exposes interactive API docs at `http://localhost:5000/docs`.
 
 - **View Report:** Open `http://localhost:5000` in your browser.
 - **Actions:** Use the buttons in the header to **Actualize Data**, **Refresh** the report, or **Filter** for high-quality (D+) stocks.
@@ -71,8 +63,7 @@ pytest tests/
 ## Project Structure
 
 - `data_pipeline/`: Core logic for data processing and report generation.
-- `web_gui/`: Flask web application and dashboard server.
-- `web_gui_fa/`: FastAPI web application and dashboard server.
+- `web_gui/`: FastAPI dashboard server.
 - `configuration.py`: Centralized management of paths, currencies, and report columns.
 - `utils/`: Reusable utilities for stock data retrieval.
 - `data/`: Sample stock lists for demonstration.
