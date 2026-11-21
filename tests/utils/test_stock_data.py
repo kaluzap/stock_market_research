@@ -65,3 +65,29 @@ def test_actualize_stock_data(mocker, tmp_path):
     with open(file_path, "r") as f:
         saved_data = json.load(f)
     assert saved_data == mock_data
+
+
+def test_download_stock_data_skips_failing_ticker(mocker):
+    # A ticker that raises (delisted, Yahoo error, ...) must not stop the others
+    mock_tickers_obj = mocker.Mock()
+    mock_ok = mocker.Mock()
+    mock_ok.info = {"symbol": "AAPL"}
+    mock_bad = mocker.Mock()
+    type(mock_bad).info = mocker.PropertyMock(side_effect=Exception("404 Not Found"))
+    mock_tickers_obj.tickers = {"AAPL": mock_ok, "GONE": mock_bad}
+    mocker.patch("yfinance.Tickers", return_value=mock_tickers_obj)
+
+    result = download_stock_data(["AAPL", "GONE"])
+
+    assert list(result) == ["AAPL"]
+
+
+def test_actualize_stock_data_keeps_old_file_when_nothing_downloaded(mocker, tmp_path):
+    file_path = tmp_path / "data.json"
+    file_path.write_text('{"AAPL": {"price": 150}}')
+    mocker.patch("utils.stock_data.download_stock_data", return_value={})
+
+    with pytest.raises(RuntimeError):
+        actualize_stock_data(["AAPL"], file_path)
+
+    assert json.loads(file_path.read_text()) == {"AAPL": {"price": 150}}

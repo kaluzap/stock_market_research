@@ -20,8 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def save_request_time() -> datetime:
-    request_time = datetime.now()
+def save_request_time(request_time: datetime) -> datetime:
     log_time_file = cfg.TEMP_DIR / cfg.FILE_REQUEST_TIME
     with open(log_time_file, "w") as f:
         f.write(f"{request_time}")
@@ -45,11 +44,14 @@ def actualize_stock_data(data_path_dir: Path):
     list_of_stocks = list(set(df["ysymbol"].dropna())) + cfg.CURRENCIES
     logger.info(f"Downloading data for: {list_of_stocks}")
 
-    save_request_time()
+    # Saved only after a successful download, so a failed update does not
+    # show old data with a new "last update" time
+    request_time = datetime.now()
     stock_data.actualize_stock_data(
         list_of_stocks,
         data_file_path,
     )
+    save_request_time(request_time)
 
 
 def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price: dict):
