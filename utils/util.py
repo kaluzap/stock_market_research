@@ -89,9 +89,11 @@ def my_classification(row: pd.Series) -> str:
         - 'A': No earnings data available (profitMargins is NaN or exactly 0.0,
                which Yahoo returns as a placeholder for missing data).
         - 'B': Negative earnings (profitMargins < 0).
-        - 'C': Has earnings, but no dividend data (profitMargins > 0 and dividendYield is NaN).
+        - 'C': Has earnings, no dividend (profitMargins > 0 and dividendYield is
+               NaN or 0.0; Yahoo now returns 0.0 for companies without dividends).
         - 'D': Has earnings and pays dividends (profitMargins > 0 and dividendYield > 0).
-        - 'X': Unexpected/invalid state (profitMargins > 0 and dividendYield <= 0).
+        - 'X': Invalid data, a negative dividend yield (profitMargins > 0 and
+               dividendYield < 0). Shown so data errors are not hidden.
 
     Sign Suffixes:
         - '?': No price change data available (change is NaN).
@@ -116,13 +118,14 @@ def my_classification(row: pd.Series) -> str:
         classification = "B"
     else:
         dividendYield = row["dividendYield"]
-        if math.isnan(dividendYield):
-            classification = "C"
-        elif dividendYield > 0:
+        if dividendYield > 0:
             classification = "D"
-        else:
-            # this cannot be true
+        elif dividendYield < 0:
+            # A negative dividend yield is impossible: an error in the data
             classification = "X"
+        else:
+            # NaN (missing) or 0.0, which Yahoo returns for no dividend
+            classification = "C"
     change = row["change"]
     if math.isnan(change):
         return classification + "?"

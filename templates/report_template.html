@@ -60,6 +60,7 @@
         [class*="classification-C"] { border-left: 5px solid #3498db !important; }
         [class*="classification-B"] { border-left: 5px solid #e67e22 !important; }
         [class*="classification-A"] { border-left: 5px solid #7f8c8d !important; }
+        [class*="classification-X"] { border-left: 5px solid #c0392b !important; }
         tr:hover { background-color: #cbd5e1 !important; outline: 1px solid var(--primary) !important; }
         a { text-decoration: none; font-weight: bold; }
         .toast {
@@ -99,9 +100,9 @@
                             <strong>Letters:</strong><br>
                             A: no earnings data<br>
                             B: no earnings<br>
-                            C: has earnings<br>
+                            C: has earnings, no dividend<br>
                             D: has earnings and dividends<br>
-                            X: should not exist
+                            X: invalid data (negative dividend)
                         </div>
                         <div>
                             <strong>Signs:</strong><br>
