@@ -84,7 +84,9 @@ def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price
 
         display_df["change"] = display_df["change"].apply(color_change)
 
-    table_html = display_df.to_html(escape=False, index=False, border=0)
+    table_html = display_df.to_html(
+        escape=False, index=False, border=0, table_id="stock-table"
+    )
 
     # Post-processing the table HTML to add dynamic classes and sort methods
     lines = table_html.split("\n")
@@ -116,8 +118,6 @@ def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price
         processed_lines.append(line)
 
     table_html = "\n".join(processed_lines)
-    # Add table-specific class for CSS
-    table_html = table_html.replace("<table>", '<table id="stock-table">')
 
     # Prepare the HTML template with modern CSS and JS for sorting
     template_path = cfg.TEMPLATES_DIR / cfg.FILE_REPORT_TEMPLATE
@@ -260,10 +260,23 @@ def filter_stocks_df(
     return df
 
 
+def ensure_directories():
+    """Creates temp/ and reports/, which are git-ignored and missing after a clone."""
+    cfg.TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    cfg.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+
 def main(data_path_dir: Path, sort_by: str, column_value: str, actualize: bool):
+
+    ensure_directories()
 
     if actualize:
         actualize_stock_data(data_path_dir)
+    elif not data_file_path.exists():
+        raise SystemExit(
+            "No stock data yet. Download it first with: "
+            "python data_pipeline/create_report.py -a"
+        )
 
     df, eur_currencies_prices = create_stocks_df(data_path_dir)
 
@@ -304,7 +317,7 @@ if __name__ == "__main__":
         required=False,
         type=str,
         default="",
-        help="Specify a column and value for filtering. Use + as separator (recommendationKey+hold).",
+        help="Specify a column and value for filtering. Use : as separator (classification:D+).",
     )
 
     parser.add_argument(

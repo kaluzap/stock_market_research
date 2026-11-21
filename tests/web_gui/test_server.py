@@ -78,3 +78,12 @@ def test_actualize_failure_returns_500_with_stderr(client, mocker, notify):
     assert response.status_code == 500
     assert response.json() == {"status": "error", "error": "Yahoo rate limit"}
     assert "failed" in notify.call_args.args[1]
+
+
+def test_index_without_report_shows_download_page(client, mocker, tmp_path):
+    mocker.patch("web_gui.server.REPORT_PATH", tmp_path / "missing.html")
+
+    response = client.get("/")
+
+    assert response.status_code == 404
+    assert "No report yet" in response.text
