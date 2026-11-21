@@ -1,0 +1,5 @@
+# Commits that only reformat code; git blame and GitHub skip them.
+# Locally: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Format code with Black
+3d97cee625428f47b3733062c91aad10cb257d0a
