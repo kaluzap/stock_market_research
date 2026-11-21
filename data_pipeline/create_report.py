@@ -100,11 +100,13 @@ def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price
 
         # Colorize classification (matching the specific pattern for the classification column)
         # The classification column values are like "D+", "A-", "C?", etc.
-        # We target the pattern <td>[A-D][+|-|?]?</td>
+        # We target the pattern <td>[A-DX][+|-|?]?</td>
         import re
 
         line = re.sub(
-            r"<td>([A-D][\+\-\?]?)</td>", r'<td class="classification-\1">\1</td>', line
+            r"<td>([A-DX][\+\-\?]?)</td>",
+            r'<td class="classification-\1">\1</td>',
+            line,
         )
 
         # Add data-sort-method="number" to headers of numeric columns

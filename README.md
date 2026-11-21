@@ -98,6 +98,7 @@ Each asset gets a letter and a sign, for example `D+`.
 | B | Losing money (negative profit margin) |
 | C | Profitable, no dividend |
 | D | Profitable and pays a dividend |
+| X | Invalid data: negative dividend yield (should never appear) |
 
 | Sign | Meaning |
 |---|---|
