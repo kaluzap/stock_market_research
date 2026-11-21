@@ -42,7 +42,9 @@ def actualize():
     """Downloads fresh data from Yahoo Finance and rebuilds the report."""
     result = run_report("-a")
     if result.returncode == 0:
-        desktop_notification("Stock Market Research", "Data actualized. The report has been updated.")
+        desktop_notification(
+            "Stock Market Research", "Data actualized. The report has been updated."
+        )
     else:
         desktop_notification("Stock Market Research", "Data actualization failed.")
     return to_response(result, "Report updated.")

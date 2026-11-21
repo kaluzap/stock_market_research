@@ -13,7 +13,9 @@ def client():
 
 
 def fake_run(returncode: int, stderr: str = ""):
-    return subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr=stderr)
+    return subprocess.CompletedProcess(
+        args=[], returncode=returncode, stdout="", stderr=stderr
+    )
 
 
 @pytest.fixture
@@ -67,7 +69,9 @@ def test_actualize_success_notifies(client, mocker, notify):
 
 
 def test_actualize_failure_returns_500_with_stderr(client, mocker, notify):
-    mocker.patch("web_gui.server.subprocess.run", return_value=fake_run(1, "Yahoo rate limit"))
+    mocker.patch(
+        "web_gui.server.subprocess.run", return_value=fake_run(1, "Yahoo rate limit")
+    )
 
     response = client.post("/actualize")
 

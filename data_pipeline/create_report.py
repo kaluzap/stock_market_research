@@ -144,7 +144,11 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     # Warn about mistyped ISINs (e.g. letter 'O' instead of digit '0'). Crypto has no ISIN.
     for _, row in df_symbol_name.iterrows():
         isin = row["isin"]
-        if isinstance(isin, str) and isin.lower() != "none" and not util.is_valid_isin(isin):
+        if (
+            isinstance(isin, str)
+            and isin.lower() != "none"
+            and not util.is_valid_isin(isin)
+        ):
             logger.warning(f"Invalid ISIN '{isin}' for '{row['name']}'")
 
     # One output row per list row: several rows can share a ticker (e.g. an old
@@ -203,7 +207,10 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
 
     for col in cfg.COLUMNS_NEED_CURRENCY_CONVERTION:
         df[col] = df.apply(
-            lambda r: round(util.make_currency_transformation(r, col, eur_currencies_prices), 2), axis=1
+            lambda r: round(
+                util.make_currency_transformation(r, col, eur_currencies_prices), 2
+            ),
+            axis=1,
         )
 
     df["exDividendDate"] = df.apply(
