@@ -27,7 +27,8 @@ def download_stock_data(stocks: list[str]) -> dict:
                 except Exception as e:
                     print(f"Error dividend_history for '{stock}': '{e}'")
                     pass
-        except KeyError as e:
+        except Exception as e:
+            # Skip only this ticker (delisted, Yahoo error, ...) and keep the rest
             print(f"Error with stock_data for '{stock}': '{e}'")
             continue
         data[stock] = stock_data
@@ -41,6 +42,9 @@ def save_stock_data(data: dict, data_file_path: Path):
 
 def actualize_stock_data(stocks: list[str], data_file_path: Path):
     data = download_stock_data(stocks)
+    if not data:
+        # e.g. Yahoo rate limit: keep the previous data file instead of emptying it
+        raise RuntimeError("No stock data could be downloaded. Previous data kept.")
     save_stock_data(data, data_file_path)
 
 

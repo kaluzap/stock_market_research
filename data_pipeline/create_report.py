@@ -9,7 +9,6 @@ import configuration as cfg
 from utils import stock_data, util
 
 data_file_path = cfg.TEMP_DIR / cfg.FILE_STOCK_DATA
-PATH_FILE_STOCKS_PRICES = Path("/tmp/stocks_prices.csv")
 
 # Configure logging
 logging.getLogger("yfinance").setLevel(logging.CRITICAL)
@@ -20,8 +19,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def save_request_time() -> datetime:
-    request_time = datetime.now()
+def save_request_time(request_time: datetime) -> datetime:
     log_time_file = cfg.TEMP_DIR / cfg.FILE_REQUEST_TIME
     with open(log_time_file, "w") as f:
         f.write(f"{request_time}")
@@ -45,11 +43,14 @@ def actualize_stock_data(data_path_dir: Path):
     list_of_stocks = list(set(df["ysymbol"].dropna())) + cfg.CURRENCIES
     logger.info(f"Downloading data for: {list_of_stocks}")
 
-    save_request_time()
+    # Saved only after a successful download, so a failed update does not
+    # show old data with a new "last update" time
+    request_time = datetime.now()
     stock_data.actualize_stock_data(
         list_of_stocks,
         data_file_path,
     )
+    save_request_time(request_time)
 
 
 def create_simple_report(df: pd.DataFrame, report_file_path: Path, eur_usd_price: dict):
@@ -143,7 +144,11 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
     # Warn about mistyped ISINs (e.g. letter 'O' instead of digit '0'). Crypto has no ISIN.
     for _, row in df_symbol_name.iterrows():
         isin = row["isin"]
-        if isinstance(isin, str) and isin.lower() != "none" and not util.is_valid_isin(isin):
+        if (
+            isinstance(isin, str)
+            and isin.lower() != "none"
+            and not util.is_valid_isin(isin)
+        ):
             logger.warning(f"Invalid ISIN '{isin}' for '{row['name']}'")
 
     # One output row per list row: several rows can share a ticker (e.g. an old
@@ -202,7 +207,10 @@ def create_stocks_df(data_path_dir: Path) -> tuple[pd.DataFrame, float]:
 
     for col in cfg.COLUMNS_NEED_CURRENCY_CONVERTION:
         df[col] = df.apply(
-            lambda r: round(util.make_currency_transformation(r, col, eur_currencies_prices), 2), axis=1
+            lambda r: round(
+                util.make_currency_transformation(r, col, eur_currencies_prices), 2
+            ),
+            axis=1,
         )
 
     df["exDividendDate"] = df.apply(
@@ -258,9 +266,6 @@ def main(data_path_dir: Path, sort_by: str, column_value: str, actualize: bool):
         actualize_stock_data(data_path_dir)
 
     df, eur_currencies_prices = create_stocks_df(data_path_dir)
-
-    # send a copy for other uses
-    df[["my_name", "isin", "regularMarketPrice"]].to_csv(PATH_FILE_STOCKS_PRICES)
 
     df = filter_stocks_df(df, sort_by, column_value)
 

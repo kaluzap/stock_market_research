@@ -9,12 +9,12 @@ logger = logging.getLogger(__name__)
 
 def create_ex_dividend_date(row: pd.Series) -> str:
     """
-    Extracts the latest ex-dividend date and calculates the number of days 
+    Extracts the latest ex-dividend date and calculates the number of days
     between the two most recent dividend events.
 
-    To handle stale Yahoo Finance API summary data and timezone offsets (which 
+    To handle stale Yahoo Finance API summary data and timezone offsets (which
     can shift timestamps for the same event by a few hours), this function:
-    1. Collects all unique dates from both the summary info (exDividendDate, 
+    1. Collects all unique dates from both the summary info (exDividendDate,
        lastDividendDate) and historical records (ex_date_1, ex_date_2).
     2. Groups/deduplicates dates that are within 10 days of each other.
     3. Identifies the latest (day_last) and previous (day_previous) distinct events.
@@ -27,7 +27,7 @@ def create_ex_dividend_date(row: pd.Series) -> str:
             - 'ex_date_2': Second most recent dividend timestamp from history (float).
 
     Returns:
-        str: Formatted ex-dividend date with delta days (e.g., '2026-03-30 (90)' 
+        str: Formatted ex-dividend date with delta days (e.g., '2026-03-30 (90)'
              or 'old 2026-03-30 (90)' if in the past), or '---' if no dates exist.
     """
 
@@ -135,7 +135,9 @@ def my_classification(row: pd.Series) -> str:
             return classification + "+"
 
 
-def make_currency_transformation(row: pd.Series, col: str, eur_currencies_prices: dict[str, float]) -> float:
+def make_currency_transformation(
+    row: pd.Series, col: str, eur_currencies_prices: dict[str, float]
+) -> float:
     """
     Transforms a monetary value in a given column to Euros (EUR).
 
