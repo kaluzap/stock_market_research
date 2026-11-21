@@ -16,8 +16,7 @@ TEMP_DIR = BASE_DIR / "temp"
 TEMPLATES_DIR = BASE_DIR / "templates"
 
 # Server
-FLASK_PORT = 5000
-FASTAPI_PORT = 5000
+SERVER_PORT = 5000
 
 # Files
 FILE_STOCK_DATA = "stock_data.json"

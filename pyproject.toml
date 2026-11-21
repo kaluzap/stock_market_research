@@ -12,7 +12,6 @@ dependencies = [
     "beautifulsoup4>=4.14.2",
     "pandas>=2.3.3",
     "yfinance>=0.2.66",
-    "flask>=3.1.0",
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
     "requests>=2.32.5",
@@ -23,8 +22,8 @@ dependencies = [
 ]
 
 [tool.setuptools]
-py-modules = ["configuration", "find_yahoo_id", "server"]
+py-modules = ["configuration"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["utils*", "data_pipeline*"]
+include = ["utils*", "data_pipeline*", "web_gui*"]
