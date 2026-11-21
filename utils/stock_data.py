@@ -1,38 +1,49 @@
-import yfinance as yf
-import pandas as pd
-from pathlib import Path
 import json
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+import pandas as pd
+import yfinance as yf
 from curl_cffi import requests
+
+# Tickers downloaded at the same time. Each ticker needs two requests (info and
+# dividend history); most of the time is spent waiting for Yahoo, so parallel
+# requests make the update about this many times faster.
+DOWNLOAD_WORKERS = 16
+
+
+def download_one(tickers: yf.Tickers, stock: str) -> dict | None:
+    """The Yahoo info of one ticker, with its last two dividends.
+
+    The dividends are added as 'ex_date_1', 'ex_value_1', 'ex_date_2' and
+    'ex_value_2' (they are not in the info). Returns None if the info fails
+    (delisted ticker, Yahoo error, ...), so only this ticker is skipped.
+    """
+    try:
+        stock_data = dict(tickers.tickers[stock].info)
+    except Exception as e:
+        print(f"Error with stock_data for '{stock}': '{e}'")
+        return None
+
+    # The dividend history is in a different place; without it the info is kept
+    try:
+        history = tickers.tickers[stock].dividends
+        for i in (1, 2):
+            if len(history) >= i:
+                stock_data[f"ex_date_{i}"] = int(history.index[-i].timestamp())
+                stock_data[f"ex_value_{i}"] = float(history.iloc[-i])
+    except Exception as e:
+        print(f"Error dividend_history for '{stock}': '{e}'")
+    return stock_data
 
 
 def download_stock_data(stocks: list[str]) -> dict:
+    """Downloads the tickers in parallel; the ones that fail are left out."""
     session = requests.Session(impersonate="chrome")
     tickers = yf.Tickers(" ".join(stocks), session=session)
-    data = dict()
-    for stock in stocks:
-        try:
-            stock_data = tickers.tickers[stock].info
-            # dividend history is in a different place
-            dividend_history = tickers.tickers[stock].dividends
-            if not dividend_history.empty:
-                try:
-                    ex_date_1 = int(dividend_history.index[-1].timestamp())
-                    ex_value_1 = dividend_history.iloc[-1]
-                    stock_data["ex_date_1"] = ex_date_1
-                    stock_data["ex_value_1"] = ex_value_1
-                    ex_date_2 = int(dividend_history.index[-2].timestamp())
-                    ex_value_2 = dividend_history.iloc[-2]
-                    stock_data["ex_date_2"] = ex_date_2
-                    stock_data["ex_value_2"] = ex_value_2
-                except Exception as e:
-                    print(f"Error dividend_history for '{stock}': '{e}'")
-                    pass
-        except Exception as e:
-            # Skip only this ticker (delisted, Yahoo error, ...) and keep the rest
-            print(f"Error with stock_data for '{stock}': '{e}'")
-            continue
-        data[stock] = stock_data
-    return data
+    with ThreadPoolExecutor(max_workers=DOWNLOAD_WORKERS) as executor:
+        results = executor.map(lambda stock: download_one(tickers, stock), stocks)
+        return {stock: data for stock, data in zip(stocks, results) if data is not None}
 
 
 def save_stock_data(data: dict, data_file_path: Path):
