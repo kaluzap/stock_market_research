@@ -60,6 +60,16 @@ To verify the logic and data integrity:
 pytest tests/
 ```
 
+### 4. Code Formatting
+
+The code is formatted with [Black](https://black.readthedocs.io/). A [pre-commit](https://pre-commit.com/) hook runs it automatically before every commit, and CI fails if any file is not formatted. Install the hook once per clone:
+
+```bash
+pre-commit install
+```
+
+To format everything by hand: `black .`
+
 ## Project Structure
 
 - `data_pipeline/`: Core logic for data processing and report generation.

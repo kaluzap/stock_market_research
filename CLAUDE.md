@@ -12,6 +12,7 @@ python data_pipeline/create_report.py          # rebuild report from stored data
 python data_pipeline/create_report.py -a       # download fresh data, then rebuild
 python web_gui/server.py                       # dashboard at http://localhost:5000
 python utils/find_yahoo_id.py <ISIN> ...       # find the best Yahoo ticker for an ISIN
+black .                                        # format code (also run by the pre-commit hook and checked in CI)
 ```
 
 ## Layout
@@ -26,6 +27,7 @@ python utils/find_yahoo_id.py <ISIN> ...       # find the best Yahoo ticker for 
 
 ## Conventions
 
+- Code is formatted with Black (line length 88); run `black .` before committing if the hook is not installed.
 - Tests must not hit the network: mock `yfinance`, `subprocess.run` and `desktop_notification`.
 - The server binds to `127.0.0.1` only; keep it that way (no CORS, no `0.0.0.0`).
 - Monetary columns are shown in EUR; add new currencies to `CURRENCIES` in `configuration.py`.
