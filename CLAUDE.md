@@ -23,7 +23,7 @@ black .                                        # format code (also run by the pr
 - `web_gui/server.py`: FastAPI; each endpoint runs `create_report.py` as a subprocess.
 - `templates/report_template.html`: report page with sorting and action buttons.
 - `my_data/list_of_stocks.csv` (private, git-ignored) is used if present, otherwise `data/` (public sample).
-- `temp/` holds the downloaded data cache and last update time; `reports/` holds the generated HTML. Both git-ignored.
+- `temp/` holds the downloaded data cache and last update time; `reports/` holds the generated HTML. Both git-ignored and created on the first run; without data, run `create_report.py -a` first.
 
 ## Conventions
 

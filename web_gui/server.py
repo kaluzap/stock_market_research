@@ -2,7 +2,7 @@ import subprocess
 import sys
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
 import configuration as cfg
 from utils.notify import desktop_notification
@@ -11,6 +11,16 @@ app = FastAPI(title="Stock Market Research", version="1.0.0")
 
 SCRIPT_PATH = cfg.BASE_DIR / "data_pipeline" / "create_report.py"
 REPORT_PATH = cfg.REPORT_DIR / "simple_stock_report.html"
+
+# Shown before the first report exists (e.g. right after cloning the repo)
+NO_REPORT_PAGE = """<!DOCTYPE html>
+<html><body style="font-family: sans-serif; margin: 2rem">
+<h1>No report yet</h1>
+<p>Download the stock data to build the first report (this takes a minute).</p>
+<button onclick="this.disabled = true; this.textContent = 'Downloading...';
+  fetch('/actualize', {method: 'POST'}).then(() => location.reload())">
+  Download data</button>
+</body></html>"""
 
 
 def run_report(*extra_args: str) -> subprocess.CompletedProcess:
@@ -34,6 +44,8 @@ def to_response(result: subprocess.CompletedProcess, message: str):
 @app.get("/", summary="View report", tags=["Dashboard"])
 def index():
     """Serves the main stock report."""
+    if not REPORT_PATH.exists():
+        return HTMLResponse(NO_REPORT_PAGE, status_code=404)
     return FileResponse(REPORT_PATH)
 
 
