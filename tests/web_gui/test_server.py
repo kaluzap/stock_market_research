@@ -87,3 +87,33 @@ def test_index_without_report_shows_download_page(client, mocker, tmp_path):
 
     assert response.status_code == 404
     assert "No report yet" in response.text
+
+
+def test_second_run_while_busy_returns_409(client, mocker, notify):
+    run = mocker.patch("web_gui.server.subprocess.run", return_value=fake_run(0))
+
+    with server.pipeline_lock:  # a run is in progress
+        response = client.post("/actualize")
+
+    assert response.status_code == 409
+    assert "already being updated" in response.json()["error"]
+    run.assert_not_called()
+    notify.assert_not_called()
+
+
+def test_refresh_also_waits_for_a_running_update(client, mocker):
+    mocker.patch("web_gui.server.subprocess.run", return_value=fake_run(0))
+
+    with server.pipeline_lock:
+        assert client.post("/refresh").status_code == 409
+    # Once the run is over, it works again
+    assert client.post("/refresh").status_code == 200
+
+
+def test_lock_is_released_when_the_run_crashes(client, mocker):
+    mocker.patch("web_gui.server.subprocess.run", side_effect=OSError("no python"))
+
+    with pytest.raises(OSError):
+        client.post("/refresh")
+
+    assert not server.pipeline_lock.locked()

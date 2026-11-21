@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import threading
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -12,27 +13,47 @@ app = FastAPI(title="Stock Market Research", version="1.0.0")
 SCRIPT_PATH = cfg.BASE_DIR / "data_pipeline" / "create_report.py"
 REPORT_PATH = cfg.REPORT_DIR / "simple_stock_report.html"
 
+# Only one pipeline run at a time: two runs (e.g. two clicks on "Actualize
+# Data") would write the same data and report files at the same time
+pipeline_lock = threading.Lock()
+
 # Shown before the first report exists (e.g. right after cloning the repo)
 NO_REPORT_PAGE = """<!DOCTYPE html>
 <html><body style="font-family: sans-serif; margin: 2rem">
 <h1>No report yet</h1>
-<p>Download the stock data to build the first report (this takes a minute).</p>
+<p>Download the stock data to build the first report (this takes about 30 seconds).</p>
 <button onclick="this.disabled = true; this.textContent = 'Downloading...';
   fetch('/actualize', {method: 'POST'}).then(() => location.reload())">
   Download data</button>
 </body></html>"""
 
 
-def run_report(*extra_args: str) -> subprocess.CompletedProcess:
-    """Runs create_report.py with the same Python (and venv) as the server."""
-    return subprocess.run(
-        [sys.executable, str(SCRIPT_PATH), "-d", str(cfg.DATA_DIR), *extra_args],
-        capture_output=True,
-        text=True,
-    )
+def run_report(*extra_args: str) -> subprocess.CompletedProcess | None:
+    """Runs create_report.py with the same Python (and venv) as the server.
+
+    Returns None, without running it, if another run is still in progress.
+    """
+    if not pipeline_lock.acquire(blocking=False):
+        return None
+    try:
+        return subprocess.run(
+            [sys.executable, str(SCRIPT_PATH), "-d", str(cfg.DATA_DIR), *extra_args],
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        pipeline_lock.release()
 
 
-def to_response(result: subprocess.CompletedProcess, message: str):
+def to_response(result: subprocess.CompletedProcess | None, message: str):
+    if result is None:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "status": "error",
+                "error": "The report is already being updated. Try again in a moment.",
+            },
+        )
     if result.returncode == 0:
         return {"status": "success", "message": message}
     return JSONResponse(
@@ -53,7 +74,9 @@ def index():
 def actualize():
     """Downloads fresh data from Yahoo Finance and rebuilds the report."""
     result = run_report("-a")
-    if result.returncode == 0:
+    if result is None:
+        pass  # Busy: the run in progress sends its own notification
+    elif result.returncode == 0:
         desktop_notification(
             "Stock Market Research", "Data actualized. The report has been updated."
         )
