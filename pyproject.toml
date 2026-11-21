@@ -9,14 +9,10 @@ description = "A project for stock market research and report generation"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "beautifulsoup4>=4.14.2",
     "pandas>=2.3.3",
     "yfinance>=0.2.66",
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
-    "requests>=2.32.5",
-    "peewee>=3.18.2",
-    "numpy>=2.3.3",
     "curl-cffi>=0.13.0",
     "notebook>=7.5.6"
 ]
